@@ -21,7 +21,54 @@
 }
 
 body {
-    background-color: var(--bg-color);
+    background-color: white;
+    padding: 15px 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    min-width: 280px;
+    max-width: 90%;
+    z-index: 1050;
+    animation: fadeIn 0.3s, slideInUp 0.4s;
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.toast-icon {
+    font-size: 1.5rem;
+    color: var(--success-color);
+}
+
+.toast-message {
+    font-size: 0.9rem;
+}
+
+.toast-message p {
+    margin: 0.3rem 0;
+}
+
+.toast-hide {
+    animation: fadeOut 0.3s;
+    opacity: 0;
+}
+
+/* Service Header */
+.service-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.service-icon {
+    font-size: 1.5rem;
+}
+ var(--bg-color);
     color: var(--text-color);
     min-height: 100vh;
     display: flex;
@@ -400,3 +447,146 @@ input[type="number"]:focus {
 .mb-2 {
     margin-bottom: 2rem;
 }
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: var(--border-radius);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    animation: slideInUp 0.4s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    transition: var(--transition);
+}
+
+.close-modal-btn:hover {
+    color: var(--error-color);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.service-icon-large {
+    font-size: 3rem;
+    text-align: center;
+    margin: 1rem 0;
+    color: var(--primary-color);
+}
+
+.service-details {
+    margin-top: 1.5rem;
+    background-color: rgba(99, 102, 241, 0.05);
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.service-details h4 {
+    margin-bottom: 0.8rem;
+    color: var(--primary-color);
+}
+
+.service-details ul {
+    padding-left: 20px;
+}
+
+.service-details li {
+    margin-bottom: 0.5rem;
+}
+
+/* Contact Form */
+.contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 1rem 0;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.contact-form input, 
+.contact-form textarea {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    transition: var(--transition);
+}
+
+.contact-form input:focus, 
+.contact-form textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    outline: none;
+}
+
+/* Toast Messages */
+.toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color:
