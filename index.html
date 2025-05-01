@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZERO ANALYZE</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Page d'accueil -->
+        <section id="home" class="page active">
+            <div class="logo-container">
+                <div id="logo-animation"></div>
+                <h1 class="app-title">ZERO ANALYZE</h1>
+            </div>
+            <p class="tagline">Bienvenue dans ZERO ANALYZE. Ici, aucune analyse, aucun doute. Juste les cotes. Juste les chiffres.</p>
+            <button id="start-btn" class="primary-btn">Commencer</button>
+        </section>
+
+        <!-- Système de questionnaire -->
+        <section id="questionnaire" class="page">
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+                <div class="step-indicators"></div>
+            </div>
+            
+            <div id="questions-container">
+                <!-- Les questions seront injectées ici dynamiquement -->
+            </div>
+            
+            <div class="form-navigation">
+                <button id="prev-btn" class="secondary-btn">Précédent</button>
+                <button id="next-btn" class="primary-btn">Suivant</button>
+            </div>
+        </section>
+
+        <!-- Page de résultats -->
+        <section id="results" class="page">
+            <h2>Prédiction</h2>
+            
+            <div id="loading-animation" class="hidden">
+                <div id="prediction-animation"></div>
+                <p>Analyse des cotes en cours...</p>
+            </div>
+            
+            <div id="prediction-results" class="hidden">
+                <div class="result-card">
+                    <h3>Scores exacts possibles</h3>
+                    <div class="score-container">
+                        <div id="score-1" class="score"></div>
+                        <div id="score-2" class="score"></div>
+                    </div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>Résultat du match</h3>
+                    <p id="match-result"></p>
+                </div>
+                
+                <div class="result-card">
+                    <h3>Nombre de buts</h3>
+                    <p id="goals-prediction"></p>
+                </div>
+                
+                <div class="result-actions">
+                    <button id="new-prediction-btn" class="primary-btn">Nouvelle prédiction</button>
+                    <button id="home-btn" class="secondary-btn">Retour à l'accueil</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Page Profil -->
+        <section id="profile" class="page">
+            <h2>Profil</h2>
+            <div id="profile-content">
+                <!-- Contenu du profil à générer dynamiquement -->
+            </div>
+        </section>
+
+        <!-- Page Services -->
+        <section id="services" class="page">
+            <h2>Mes Services</h2>
+            <div id="services-list">
+                <!-- Services à générer dynamiquement -->
+            </div>
+        </section>
+
+        <!-- Navigation fixe -->
+        <nav class="bottom-nav">
+            <button id="nav-home" class="nav-btn active">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-text">Accueil</span>
+            </button>
+            <button id="nav-services" class="nav-btn">
+                <span class="nav-icon">🛠️</span>
+                <span class="nav-text">Mes Services</span>
+            </button>
+            <button id="nav-profile" class="nav-btn">
+                <span class="nav-icon">👤</span>
+                <span class="nav-text">Profil</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/app.js"></script>
+    <script src="js/questions.js"></script>
+    <script src="js/prediction.js"></script>
+    <script src="js/animation.js"></script>
+    <script src="js/profile.js"></script>
+</body>
+</html>
