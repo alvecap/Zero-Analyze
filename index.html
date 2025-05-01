@@ -4,326 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZERO ANALYZE</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        /* Styles intégrés pour éviter les problèmes de chargement */
-        :root {
-            --tg-theme-bg-color: #ffffff;
-            --tg-theme-text-color: #222222;
-            --tg-theme-hint-color: #999999;
-            --tg-theme-link-color: #2481cc;
-            --tg-theme-button-color: #2481cc;
-            --tg-theme-button-text-color: #ffffff;
-            --primary-color: #2481cc;
-            --secondary-color: #f59e0b;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        body {
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 16px;
-            padding-bottom: 70px;
-        }
-
-        h1, h2, h3 {
-            text-align: center;
-            margin-bottom: 16px;
-        }
-
-        .header {
-            text-align: center;
-            padding: 20px 0;
-        }
-
-        .logo {
-            font-size: 30px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: inline-block;
-        }
-
-        .tagline {
-            color: var(--tg-theme-hint-color);
-            margin-bottom: 30px;
-            font-size: 16px;
-        }
-
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 14px;
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
-            margin: 10px 0;
-            cursor: pointer;
-            text-align: center;
-        }
-
-        .btn-outline {
-            background-color: transparent;
-            border: 1px solid var(--tg-theme-button-color);
-            color: var(--tg-theme-button-color);
-        }
-
-        .form-nav {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
-
-        .form-nav .btn {
-            width: 48%;
-        }
-
-        .card {
-            background-color: var(--tg-theme-bg-color);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .question-group {
-            margin-bottom: 20px;
-        }
-
-        .question-label {
-            font-weight: 600;
-            margin-bottom: 6px;
-            display: block;
-        }
-
-        .question-hint {
-            color: var(--tg-theme-hint-color);
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-
-        .progress {
-            height: 6px;
-            background-color: rgba(0, 0, 0, 0.1);
-            border-radius: 3px;
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background-color: var(--tg-theme-button-color);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .steps {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .step {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: rgba(0, 0, 0, 0.1);
-        }
-
-        .step.active {
-            background-color: var(--tg-theme-button-color);
-        }
-
-        .results {
-            text-align: center;
-        }
-
-        .score-box {
-            display: flex;
-            justify-content: space-around;
-            margin: 20px 0;
-        }
-
-        .score {
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            padding: 15px 20px;
-            border-radius: 8px;
-            font-size: 24px;
-            font-weight: bold;
-            min-width: 100px;
-        }
-
-        .result-card {
-            margin-bottom: 15px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-radius: 50%;
-            border-top-color: var(--tg-theme-button-color);
-            margin: 30px auto;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: var(--tg-theme-bg-color);
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 12px;
-            color: var(--tg-theme-hint-color);
-        }
-
-        .nav-item.active {
-            color: var(--tg-theme-button-color);
-        }
-
-        .nav-icon {
-            font-size: 20px;
-            margin-bottom: 4px;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .centered {
-            text-align: center;
-        }
-
-        /* Animation simple pour le chargement */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease;
-        }
-    </style>
 </head>
 <body>
     <div id="app">
-        <!-- PAGE D'ACCUEIL -->
+        <!-- Page d'accueil -->
         <section id="home" class="page active">
-            <div class="header">
-                <div class="logo">ZERO ANALYZE</div>
-                <p class="tagline">Bienvenue dans ZERO ANALYZE. Ici, aucune analyse, aucun doute. Juste les cotes. Juste les chiffres.</p>
+            <div class="logo-container">
+                <div id="logo-animation"></div>
+                <h1 class="app-title">ZERO ANALYZE</h1>
             </div>
-            
-            <button id="start-btn" class="btn">Commencer</button>
+            <p class="tagline">Bienvenue dans ZERO ANALYZE. Ici, aucune analyse, aucun doute. Juste les cotes. Juste les chiffres.</p>
+            <button id="start-btn" class="primary-btn">Commencer</button>
         </section>
 
-        <!-- SYSTÈME DE QUESTIONNAIRE -->
+        <!-- Système de questionnaire -->
         <section id="questionnaire" class="page">
-            <div class="progress">
-                <div class="progress-bar"></div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+                <div class="step-indicators"></div>
             </div>
             
-            <div class="steps" id="step-indicators"></div>
+            <div id="questions-container">
+                <!-- Les questions seront injectées ici dynamiquement -->
+            </div>
             
-            <h2 id="step-title">Cotes 1N2</h2>
-            
-            <div id="questions-container" class="card"></div>
-            
-            <div class="form-nav">
-                <button id="prev-btn" class="btn btn-outline">Précédent</button>
-                <button id="next-btn" class="btn">Suivant</button>
+            <div class="form-navigation">
+                <button id="prev-btn" class="secondary-btn">Précédent</button>
+                <button id="next-btn" class="primary-btn">Suivant</button>
             </div>
         </section>
 
-        <!-- PAGE DE RÉSULTATS -->
+        <!-- Page de résultats -->
         <section id="results" class="page">
             <h2>Prédiction</h2>
             
-            <div id="loading" class="hidden">
-                <div class="spinner"></div>
-                <p class="centered">Analyse des cotes en cours...</p>
+            <div id="loading-animation" class="hidden">
+                <div id="prediction-animation"></div>
+                <p>Analyse des cotes en cours...</p>
             </div>
             
             <div id="prediction-results" class="hidden">
-                <div class="card result-card">
+                <div class="result-card">
                     <h3>Scores exacts possibles</h3>
-                    <div class="score-box">
-                        <div id="score-1" class="score">0-0</div>
-                        <div id="score-2" class="score">1-1</div>
+                    <div class="score-container">
+                        <div id="score-1" class="score"></div>
+                        <div id="score-2" class="score"></div>
                     </div>
                 </div>
                 
-                <div class="card result-card">
+                <div class="result-card">
                     <h3>Résultat du match</h3>
-                    <p id="match-result" class="centered">Match nul</p>
+                    <p id="match-result"></p>
                 </div>
                 
-                <div class="card result-card">
+                <div class="result-card">
                     <h3>Nombre de buts</h3>
-                    <p id="goals-prediction" class="centered">Moins de 3,5 buts</p>
+                    <p id="goals-prediction"></p>
                 </div>
                 
-                <button id="new-prediction-btn" class="btn">Nouvelle prédiction</button>
-                <button id="home-btn" class="btn btn-outline">Retour à l'accueil</button>
+                <div class="result-actions">
+                    <button id="new-prediction-btn" class="primary-btn">Nouvelle prédiction</button>
+                    <button id="home-btn" class="secondary-btn">Retour à l'accueil</button>
+                </div>
             </div>
         </section>
 
-        <!-- PAGE PROFIL -->
+        <!-- Page Profil -->
         <section id="profile" class="page">
             <h2>Profil</h2>
-            <div id="profile-content" class="card">
+            <div id="profile-content">
                 <!-- Contenu du profil à générer dynamiquement -->
             </div>
         </section>
 
-        <!-- PAGE SERVICES -->
+        <!-- Page Services -->
         <section id="services" class="page">
             <h2>Mes Services</h2>
             <div id="services-list">
@@ -331,28 +89,28 @@
             </div>
         </section>
 
-        <!-- NAVIGATION FIXE -->
+        <!-- Navigation fixe -->
         <nav class="bottom-nav">
-            <div id="nav-home" class="nav-item active">
-                <div class="nav-icon">🏠</div>
-                <span>Accueil</span>
-            </div>
-            <div id="nav-services" class="nav-item">
-                <div class="nav-icon">🛠️</div>
-                <span>Services</span>
-            </div>
-            <div id="nav-profile" class="nav-item">
-                <div class="nav-icon">👤</div>
-                <span>Profil</span>
-            </div>
+            <button id="nav-home" class="nav-btn active">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-text">Accueil</span>
+            </button>
+            <button id="nav-services" class="nav-btn">
+                <span class="nav-icon">🛠️</span>
+                <span class="nav-text">Mes Services</span>
+            </button>
+            <button id="nav-profile" class="nav-btn">
+                <span class="nav-icon">👤</span>
+                <span class="nav-text">Profil</span>
+            </button>
         </nav>
     </div>
 
     <!-- Scripts -->
-    <script src="app.js"></script>
-    <script src="questions.js"></script>
-    <script src="prediction.js"></script>
-    <script src="animation.js"></script>
-    <script src="profile.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/questions.js"></script>
+    <script src="js/prediction.js"></script>
+    <script src="js/animation.js"></script>
+    <script src="js/profile.js"></script>
 </body>
 </html>
