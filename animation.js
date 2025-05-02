@@ -526,3 +526,364 @@ function createBackgroundAnimation() {
         particle.style.animationDelay = (Math.random() * 5) + 's';
         
         container.appendChild(particle);
+        container.appendChild(particle);
+    }
+    
+    // Ajouter un effet de dégradé subtil
+    const gradient = document.createElement('div');
+    gradient.className = 'bg-gradient';
+    gradient.style.position = 'absolute';
+    gradient.style.top = '0';
+    gradient.style.left = '0';
+    gradient.style.width = '100%';
+    gradient.style.height = '100%';
+    gradient.style.background = 'radial-gradient(circle at center, rgba(99, 102, 241, 0.03) 0%, rgba(245, 158, 11, 0.02) 50%, rgba(255, 255, 255, 0) 70%)';
+    gradient.style.animation = 'pulse 15s infinite ease-in-out';
+    
+    container.appendChild(gradient);
+    document.body.appendChild(container);
+    
+    // Ajouter les keyframes d'animation au DOM
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(10px, 10px); }
+            50% { transform: translate(5px, -5px); }
+            75% { transform: translate(-10px, 5px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    return container;
+}
+
+/**
+ * Initialise les animations de l'application
+ */
+function initializeAppAnimations() {
+    console.log("Initialisation des animations de l'application");
+    
+    // Animation d'arrière-plan subtile
+    createBackgroundAnimation();
+    
+    // Animation du logo sur la page d'accueil
+    const logoContainer = document.getElementById('logo-animation');
+    if (logoContainer) {
+        initLogoAnimationEffect(logoContainer);
+    }
+    
+    // Ajouter des animations aux cartes
+    animateCards();
+    
+    // Ajouter des effets de survol aux boutons
+    enhanceButtonEffects();
+}
+
+/**
+ * Ajoute des animations aux cartes de l'application
+ */
+function animateCards() {
+    const cards = document.querySelectorAll('.card');
+    
+    cards.forEach((card, index) => {
+        // Ajouter un délai progressif pour une animation en cascade
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        
+        // Animation d'entrée
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, 100 + index * 100);
+        
+        // Effet de survol amélioré
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-8px) scale(1.02)';
+            card.style.boxShadow = '0 15px 30px rgba(0, 0, 0, 0.15)';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'translateY(0) scale(1)';
+            card.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.1)';
+        });
+    });
+}
+
+/**
+ * Améliore les effets visuels des boutons
+ */
+function enhanceButtonEffects() {
+    const buttons = document.querySelectorAll('.btn');
+    
+    buttons.forEach(button => {
+        // Effet de ripple au clic
+        button.addEventListener('click', function(e) {
+            // Créer l'élément ripple
+            const ripple = document.createElement('span');
+            ripple.className = 'btn-ripple';
+            ripple.style.position = 'absolute';
+            ripple.style.borderRadius = '50%';
+            ripple.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+            ripple.style.width = '5px';
+            ripple.style.height = '5px';
+            ripple.style.transform = 'scale(0)';
+            ripple.style.animation = 'ripple 0.6s linear';
+            ripple.style.pointerEvents = 'none';
+            
+            // Ajouter les keyframes d'animation si nécessaire
+            if (!document.querySelector('#ripple-animation')) {
+                const style = document.createElement('style');
+                style.id = 'ripple-animation';
+                style.textContent = `
+                    @keyframes ripple {
+                        to {
+                            transform: scale(30);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Calculer la position
+            const rect = button.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            
+            // Assurer que le bouton a position relative
+            if (getComputedStyle(button).position === 'static') {
+                button.style.position = 'relative';
+                button.style.overflow = 'hidden';
+            }
+            
+            // Ajouter et supprimer le ripple
+            button.appendChild(ripple);
+            setTimeout(() => {
+                if (ripple.parentNode === button) {
+                    button.removeChild(ripple);
+                }
+            }, 600);
+        });
+    });
+}
+
+/**
+ * Crée un effet de particules flottantes
+ * @param {HTMLElement} container - Le conteneur pour les particules
+ * @param {Object} options - Options de configuration
+ */
+function createFloatingParticles(container, options = {}) {
+    const defaults = {
+        count: 20,
+        colors: ['#6366f1', '#818cf8', '#f59e0b', '#fbbf24'],
+        minSize: 3,
+        maxSize: 8,
+        speed: 30, // Secondes pour compléter l'animation
+        opacity: 0.3
+    };
+    
+    const config = { ...defaults, ...options };
+    
+    // Vérifier si le conteneur a position relative ou absolute
+    const containerStyle = getComputedStyle(container);
+    if (containerStyle.position === 'static') {
+        container.style.position = 'relative';
+    }
+    
+    // Créer le conteneur de particules
+    const particlesContainer = document.createElement('div');
+    particlesContainer.className = 'floating-particles';
+    particlesContainer.style.position = 'absolute';
+    particlesContainer.style.top = '0';
+    particlesContainer.style.left = '0';
+    particlesContainer.style.width = '100%';
+    particlesContainer.style.height = '100%';
+    particlesContainer.style.overflow = 'hidden';
+    particlesContainer.style.pointerEvents = 'none';
+    particlesContainer.style.zIndex = '1';
+    
+    // Créer les particules
+    for (let i = 0; i < config.count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'floating-particle';
+        
+        // Propriétés des particules
+        const size = config.minSize + Math.random() * (config.maxSize - config.minSize);
+        const color = config.colors[Math.floor(Math.random() * config.colors.length)];
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const speed = config.speed * (0.8 + Math.random() * 0.4);
+        const delay = Math.random() * config.speed;
+        
+        // Appliquer les styles
+        particle.style.position = 'absolute';
+        particle.style.width = size + 'px';
+        particle.style.height = size + 'px';
+        particle.style.backgroundColor = color;
+        particle.style.borderRadius = '50%';
+        particle.style.opacity = Math.random() * config.opacity;
+        particle.style.left = x + '%';
+        particle.style.top = y + '%';
+        particle.style.animation = `floatParticle ${speed}s infinite linear`;
+        particle.style.animationDelay = `-${delay}s`;
+        
+        particlesContainer.appendChild(particle);
+    }
+    
+    // Ajouter les keyframes si nécessaire
+    if (!document.querySelector('#floating-particles-animation')) {
+        const style = document.createElement('style');
+        style.id = 'floating-particles-animation';
+        style.textContent = `
+            @keyframes floatParticle {
+                0% {
+                    transform: translate(0, 0);
+                }
+                25% {
+                    transform: translate(10%, 15%);
+                }
+                50% {
+                    transform: translate(-5%, 20%);
+                }
+                75% {
+                    transform: translate(-15%, 5%);
+                }
+                100% {
+                    transform: translate(0, 0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    container.appendChild(particlesContainer);
+    return particlesContainer;
+}
+
+/**
+ * Crée un effet de confetti pour les événements importants
+ * @param {Object} options - Options de configuration
+ */
+function createConfettiEffect(options = {}) {
+    const defaults = {
+        particleCount: 100,
+        spread: 70,
+        duration: 3000, // ms
+        colors: ['#6366f1', '#818cf8', '#f59e0b', '#fbbf24', '#10b981']
+    };
+    
+    const config = { ...defaults, ...options };
+    
+    // Créer le conteneur
+    const confettiContainer = document.createElement('div');
+    confettiContainer.className = 'confetti-container';
+    confettiContainer.style.position = 'fixed';
+    confettiContainer.style.top = '0';
+    confettiContainer.style.left = '0';
+    confettiContainer.style.width = '100%';
+    confettiContainer.style.height = '100%';
+    confettiContainer.style.pointerEvents = 'none';
+    confettiContainer.style.zIndex = '9999';
+    
+    // Créer les particules de confetti
+    for (let i = 0; i < config.particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'confetti-particle';
+        
+        // Propriétés aléatoires
+        const size = Math.floor(Math.random() * 10) + 5;
+        const color = config.colors[Math.floor(Math.random() * config.colors.length)];
+        const shape = Math.random() > 0.5 ? 'circle' : 'square';
+        const startX = 50 + (Math.random() * config.spread - config.spread / 2);
+        const startY = -10;
+        const endY = 110 + Math.random() * 20;
+        const rotation = Math.random() * 360;
+        const rotationEnd = rotation + Math.random() * 720 - 360;
+        const duration = config.duration * (0.8 + Math.random() * 0.4);
+        const delay = Math.random() * 500;
+        
+        // Appliquer les styles
+        particle.style.position = 'absolute';
+        particle.style.width = size + 'px';
+        particle.style.height = size + 'px';
+        particle.style.backgroundColor = color;
+        particle.style.borderRadius = shape === 'circle' ? '50%' : '0';
+        particle.style.left = startX + '%';
+        particle.style.top = startY + '%';
+        particle.style.opacity = 1;
+        
+        // Définir l'animation
+        particle.style.animation = `confettiDrop ${duration}ms ease-in-out forwards`;
+        particle.style.animationDelay = delay + 'ms';
+        
+        // Ajouter une animation de rotation
+        particle.style.transform = `rotate(${rotation}deg)`;
+        
+        confettiContainer.appendChild(particle);
+    }
+    
+    // Ajouter les keyframes si nécessaire
+    if (!document.querySelector('#confetti-animation')) {
+        const style = document.createElement('style');
+        style.id = 'confetti-animation';
+        style.textContent = `
+            @keyframes confettiDrop {
+                0% {
+                    transform: translateY(0) rotate(0deg);
+                    opacity: 1;
+                }
+                75% {
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(${100 + Math.random() * 20}vh) rotate(${Math.random() * 720 - 360}deg);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(confettiContainer);
+    
+    // Supprimer le conteneur après l'animation
+    setTimeout(() => {
+        if (confettiContainer.parentNode) {
+            document.body.removeChild(confettiContainer);
+        }
+    }, config.duration + 1000);
+    
+    return confettiContainer;
+}
+
+// Exposer les fonctions au contexte global
+window.initLogoAnimationEffect = initLogoAnimationEffect;
+window.initPredictionAnimation = initPredictionAnimation;
+window.createScannerAnimation = createScannerAnimation;
+window.initializeAppAnimations = initializeAppAnimations;
+window.createFloatingParticles = createFloatingParticles;
+window.createConfettiEffect = createConfettiEffect;
+
+// Initialiser les animations au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    // Lancer les animations principales
+    initializeAppAnimations();
+    
+    // Créer un effet de confetti pour l'accueil si c'est la première visite
+    if (!localStorage.getItem('visited')) {
+        setTimeout(() => {
+            createConfettiEffect();
+            localStorage.setItem('visited', 'true');
+        }, 1000);
+    }
+});
