@@ -1,12 +1,8 @@
-// app.js - Logique principale optimisée pour Telegram WebApp avec intégration Firebase
-
-// Import Firebase (ajoutez ces imports en haut de votre fichier)
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth, signInAnonymously } from "firebase/auth";
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
+// app.js - Logique principale pour Telegram WebApp avec intégration Firebase
 
 document.addEventListener('DOMContentLoaded', async function() {
+    console.log("Application initialisée");
+    
     // Initialisation de Firebase - utilise les variables d'environnement de Render
     const firebaseConfig = {
         apiKey: process.env.FIREBASE_API_KEY,
@@ -19,9 +15,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     let app, db, auth, currentUser;
     try {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
+        // Initialisation de Firebase avec compatibilité
+        app = firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
         console.log("Firebase initialisé avec succès");
     } catch (error) {
         console.error("Erreur lors de l'initialisation de Firebase:", error);
@@ -51,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (telegramApp.initDataUnsafe?.user) {
                 try {
                     // Authentifier l'utilisateur de manière anonyme
-                    await signInAnonymously(auth);
+                    await auth.signInAnonymously();
                     
                     // Vérifier/créer l'utilisateur dans Firestore
                     currentUser = await checkOrCreateUser(db, telegramApp.initDataUnsafe.user);
@@ -76,9 +73,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const telegramId = telegramUser.id.toString();
             
             // Chercher l'utilisateur par son ID Telegram
-            const usersRef = collection(db, 'users');
-            const q = query(usersRef, where('telegramId', '==', telegramId));
-            const querySnapshot = await getDocs(q);
+            const usersRef = db.collection('users');
+            const q = usersRef.where('telegramId', '==', telegramId);
+            const querySnapshot = await q.get();
             
             // Si l'utilisateur existe, retourner ses données
             if (!querySnapshot.empty) {
@@ -86,8 +83,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const userData = userDoc.data();
                 
                 // Mise à jour de la date de dernier accès
-                await updateDoc(userDoc.ref, {
-                    lastAccessedAt: serverTimestamp()
+                await userDoc.ref.update({
+                    lastAccessedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
                 return {
@@ -102,17 +99,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 telegramId: telegramId,
                 username: telegramUser.username || '',
                 firstName: telegramUser.first_name || '',
-                createdAt: serverTimestamp(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 dailyLimit: 6,  // Limite modifiée à 6 comme demandé
                 usageCount: 0,
-                lastResetDate: serverTimestamp(),
+                lastResetDate: firebase.firestore.FieldValue.serverTimestamp(),
                 isAdmin: isAdmin,
                 isPremium: false,
                 premiumExpiry: null,
-                lastAccessedAt: serverTimestamp()
+                lastAccessedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
             
-            const docRef = await addDoc(usersRef, newUser);
+            const docRef = await usersRef.add(newUser);
             return {
                 id: docRef.id,
                 ...newUser
@@ -233,9 +230,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!db || !currentUser || !currentUser.telegramId) return;
         
         try {
-            const usersRef = collection(db, 'users');
-            const q = query(usersRef, where('telegramId', '==', currentUser.telegramId));
-            const querySnapshot = await getDocs(q);
+            const usersRef = db.collection('users');
+            const q = usersRef.where('telegramId', '==', currentUser.telegramId);
+            const querySnapshot = await q.get();
             
             if (querySnapshot.empty) return;
             
@@ -419,10 +416,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         try {
             // Récupérer la référence de l'utilisateur
-            const userRef = doc(db, 'users', userId);
-            const userDoc = await getDoc(userRef);
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
             
-            if (!userDoc.exists()) {
+            if (!userDoc.exists) {
                 console.error("Utilisateur non trouvé");
                 return;
             }
@@ -436,17 +433,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             // Mettre à jour le compteur
-            await updateDoc(userRef, {
+            await userRef.update({
                 usageCount: (userData.usageCount || 0) + 1,
-                lastPredictionAt: serverTimestamp(),
+                lastPredictionAt: firebase.firestore.FieldValue.serverTimestamp(),
                 totalPredictionsCount: (userData.totalPredictionsCount || 0) + 1
             });
             
             // Enregistrer les détails de la prédiction
-            await addDoc(collection(db, 'predictions'), {
+            await db.collection('predictions').add({
                 userId: userId,
                 telegramId: userData.telegramId,
-                timestamp: serverTimestamp(),
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 details: predictionDetails
             });
             
@@ -498,8 +495,34 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     
+    // Événements pour les services
+    document.querySelectorAll('.service-info-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const serviceId = this.getAttribute('data-service');
+            if (window.showServiceDetails) {
+                window.showServiceDetails(serviceId);
+            } else {
+                alert("Information sur le service: " + serviceId);
+            }
+        });
+    });
+    
+    document.querySelectorAll('.service-contact-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const serviceId = this.getAttribute('data-service');
+            if (window.showContactForm) {
+                window.showContactForm(serviceId);
+            } else {
+                alert("Contact pour le service: " + serviceId);
+            }
+        });
+    });
+    
     // Initialiser l'application
     initApp();
+    
+    // Exposer les fonctions nécessaires au contexte global
+    window.loadUserProfile = loadUserProfile;
     
     // Événements pour debug Telegram WebApp
     if (telegramApp) {
@@ -508,13 +531,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         
         // Gestion du bouton retour principal de Telegram
-        telegramApp.BackButton.onClick(function() {
-            const activePage = document.querySelector('.page.active');
-            if (activePage && activePage.id !== 'home') {
-                navigateTo('home');
-            } else {
-                telegramApp.close();
-            }
-        });
+        if (telegramApp.BackButton) {
+            telegramApp.BackButton.onClick(function() {
+                const activePage = document.querySelector('.page.active');
+                if (activePage && activePage.id !== 'home') {
+                    navigateTo('home');
+                } else {
+                    telegramApp.close();
+                }
+            });
+        }
     }
 });
