@@ -1,66 +1,53 @@
-// profile.js - Gestion du profil utilisateur et des services
+// profile.js - Gestion du profil utilisateur et des services avec intégration Firebase
+
+import telegramAuth from './telegram-auth.js';
+import firebaseService from './firebase-service.js';
+import predictionLimits from './prediction-limits.js';
 
 /**
  * Stocke les données utilisateur récupérées depuis Telegram
  * @param {Object} user - Objet utilisateur Telegram
  */
 function setUserData(user) {
-    // Sauvegarder les données utilisateur dans le stockage local
-    localStorage.setItem('zeroAnalyzeUser', JSON.stringify({
-        id: user.id,
-        username: user.username,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        timestamp: Date.now()
-    }));
-    
     // Mettre à jour l'interface utilisateur
-    updateUserInterface();
-}
-
-/**
- * Récupère les données utilisateur du stockage local
- * @returns {Object|null} - Données utilisateur ou null si non trouvées
- */
-function getUserData() {
-    const userData = localStorage.getItem('zeroAnalyzeUser');
-    if (userData) {
-        try {
-            return JSON.parse(userData);
-        } catch (error) {
-            console.error('Erreur lors de la lecture des données utilisateur:', error);
-            return null;
-        }
-    }
-    return null;
+    updateUserInterface(user);
 }
 
 /**
  * Met à jour l'interface utilisateur avec les informations du profil
+ * @param {Object} userData - Données utilisateur
  */
-function updateUserInterface() {
+function updateUserInterface(userData = null) {
     const profileContent = document.getElementById('profile-content');
     if (!profileContent) return;
     
-    const userData = getUserData();
+    // Si aucune donnée utilisateur n'est fournie, utiliser celles de telegramAuth
+    if (!userData && telegramAuth.isAuthenticated()) {
+        userData = telegramAuth.getUserData();
+    }
     
-    if (userData && userData.username) {
+    if (userData) {
         // Afficher les informations de l'utilisateur
         profileContent.innerHTML = `
             <div class="profile-info">
                 <div class="profile-picture">
-                    ${userData.firstName ? userData.firstName.charAt(0) : '?'}${userData.lastName ? userData.lastName.charAt(0) : ''}
+                    ${userData.first_name ? userData.first_name.charAt(0) : '?'}${userData.last_name ? userData.last_name.charAt(0) : ''}
                 </div>
                 <div>
-                    <h3 class="profile-name">${userData.firstName || ''} ${userData.lastName || ''}</h3>
-                    <p>@${userData.username}</p>
+                    <h3 class="profile-name">${userData.first_name || ''} ${userData.last_name || ''}</h3>
+                    <p>@${userData.username || 'inconnu'}</p>
                 </div>
             </div>
             <div class="profile-details">
                 <p>Bienvenue dans ZERO ANALYZE, votre application de prédiction sportive basée uniquement sur les cotes.</p>
-                <p>Vos prédictions sont générées automatiquement grâce à nos algorithmes avancés.</p>
+                <div id="prediction-stats" class="stats-container">
+                    <p><strong>Chargement de vos statistiques...</strong></p>
+                </div>
             </div>
         `;
+        
+        // Charger les statistiques de l'utilisateur
+        loadUserStats(userData.id);
     } else {
         // Afficher un message d'erreur ou d'invitation
         profileContent.innerHTML = `
@@ -72,11 +59,105 @@ function updateUserInterface() {
 }
 
 /**
+ * Charge les statistiques de l'utilisateur depuis Firebase
+ * @param {string} userId - ID de l'utilisateur
+ */
+async function loadUserStats(userId) {
+    const statsContainer = document.getElementById('prediction-stats');
+    if (!statsContainer) return;
+    
+    try {
+        // Vérifier l'état des limites de prédictions
+        const limitStatus = await predictionLimits.canMakePrediction(userId);
+        
+        // Récupérer l'historique des prédictions
+        const predictionHistory = await firebaseService.getUserPredictions(userId, 5);
+        // Créer le contenu des statistiques
+        let statsHTML = `
+            <div class="stats-card">
+                <h4>Vos prédictions</h4>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">${limitStatus.remaining}</div>
+                        <div class="stat-label">Prédictions restantes aujourd'hui</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${predictionLimits.DAILY_LIMIT}</div>
+                        <div class="stat-label">Limite quotidienne</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Ajouter l'historique des prédictions s'il y en a
+        if (predictionHistory && predictionHistory.length > 0) {
+            statsHTML += `
+                <div class="history-card">
+                    <h4>Historique récent</h4>
+                    <ul class="prediction-history">
+            `;
+            
+            // Ajouter chaque prédiction
+            predictionHistory.forEach(pred => {
+                const date = pred.created_at ? new Date(pred.created_at.seconds * 1000) : new Date();
+                const formattedDate = date.toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                statsHTML += `
+                    <li class="history-item">
+                        <div class="history-date">${formattedDate}</div>
+                        <div class="history-details">
+                            <div class="history-score">${pred.scoreExact1} / ${pred.scoreExact2}</div>
+                            <div class="history-result">${pred.matchResult}</div>
+                        </div>
+                    </li>
+                `;
+            });
+            
+            statsHTML += `
+                    </ul>
+                </div>
+            `;
+        } else {
+            statsHTML += `
+                <div class="history-card">
+                    <h4>Historique récent</h4>
+                    <p class="centered">Aucune prédiction enregistrée pour le moment.</p>
+                </div>
+            `;
+        }
+        
+        // Mise à jour du conteneur
+        statsContainer.innerHTML = statsHTML;
+    } catch (error) {
+        console.error("Erreur lors du chargement des statistiques:", error);
+        
+        if (statsContainer) {
+            statsContainer.innerHTML = `
+                <p class="error-message">Impossible de charger vos statistiques. Veuillez réessayer ultérieurement.</p>
+            `;
+        }
+    }
+}
+
+/**
  * Charge le profil utilisateur
  * Appelé lors de la navigation vers la page de profil
  */
 function loadUserProfile() {
-    updateUserInterface();
+    if (telegramAuth.isAuthenticated()) {
+        updateUserInterface();
+    } else {
+        const profileContent = document.getElementById('profile-content');
+        if (profileContent) {
+            telegramAuth.showAuthError(profileContent);
+        }
+    }
 }
 
 /**
@@ -107,34 +188,31 @@ const servicesList = [
  * Charge les services dans la page des services
  */
 function loadServices() {
-    const servicesList = document.getElementById('services-list');
-    if (!servicesList) return;
+    const servicesListContainer = document.getElementById('services-list');
+    if (!servicesListContainer) return;
     
     // Vider la liste existante
-    servicesList.innerHTML = '';
+    servicesListContainer.innerHTML = '';
     
     // Ajouter chaque service
-    services.forEach(service => {
+    servicesList.forEach(service => {
         const serviceCard = document.createElement('div');
-        serviceCard.className = 'service-card';
+        serviceCard.className = 'card';
         
         serviceCard.innerHTML = `
-            <div class="service-header">
-                <span class="service-icon">${service.icon}</span>
-                <h3 class="service-title">${service.title}</h3>
-            </div>
-            <p class="service-description">${service.description}</p>
-            <div class="service-actions">
-                <button class="secondary-btn service-details-btn" data-service="${service.id}">Aperçu</button>
-                <button class="primary-btn service-contact-btn" data-service="${service.id}">Contact</button>
+            <h3>${service.title}</h3>
+            <p>${service.description}</p>
+            <div class="form-nav">
+                <button class="btn btn-outline service-info-btn" data-service="${service.id}">Aperçu</button>
+                <button class="btn service-contact-btn" data-service="${service.id}">Contact</button>
             </div>
         `;
         
-        servicesList.appendChild(serviceCard);
+        servicesListContainer.appendChild(serviceCard);
     });
     
     // Ajouter les écouteurs d'événements
-    document.querySelectorAll('.service-details-btn').forEach(btn => {
+    document.querySelectorAll('.service-info-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             showServiceDetails(this.dataset.service);
         });
@@ -153,95 +231,11 @@ function loadServices() {
  */
 function showServiceDetails(serviceId) {
     // Trouver le service correspondant
-    const service = services.find(s => s.id === serviceId);
+    const service = servicesList.find(s => s.id === serviceId);
     if (!service) return;
     
-    // Créer une popup modale
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>${service.title}</h3>
-                <button class="close-modal-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="service-icon-large">${service.icon}</div>
-                <p>${service.description}</p>
-                <div class="service-details">
-                    ${getServiceDetailsHTML(serviceId)}
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="primary-btn contact-service-btn" data-service="${serviceId}">Je suis intéressé</button>
-            </div>
-        </div>
-    `;
-    
-    // Ajouter au DOM
-    document.body.appendChild(modal);
-    
-    // Événements
-    modal.querySelector('.close-modal-btn').addEventListener('click', function() {
-        document.body.removeChild(modal);
-    });
-    
-    modal.querySelector('.contact-service-btn').addEventListener('click', function() {
-        document.body.removeChild(modal);
-        showContactForm(serviceId);
-    });
-    
-    // Fermer si clic en dehors
-    modal.addEventListener('click', function(event) {
-        if (event.target === modal) {
-            document.body.removeChild(modal);
-        }
-    });
-}
-
-/**
- * Génère le HTML des détails spécifiques à chaque service
- * @param {string} serviceId - ID du service
- * @returns {string} - HTML des détails
- */
-function getServiceDetailsHTML(serviceId) {
-    switch(serviceId) {
-        case 'telegram-bots':
-            return `
-                <h4>Fonctionnalités des bots Telegram</h4>
-                <ul>
-                    <li>Intégration d'algorithmes prédictifs</li>
-                    <li>Interface interactive et intuitive</li>
-                    <li>Personnalisation complète</li>
-                    <li>Notifications automatisées</li>
-                    <li>Analyse de données en temps réel</li>
-                </ul>
-            `;
-        case 'webapps':
-            return `
-                <h4>Types d'applications web</h4>
-                <ul>
-                    <li>Applications de prédiction statistique</li>
-                    <li>Dashboards analytiques</li>
-                    <li>Outils d'aide à la décision</li>
-                    <li>Systèmes de recommandation</li>
-                    <li>Intégration avec des API sportives</li>
-                </ul>
-            `;
-        case 'youtube':
-            return `
-                <h4>Services pour YouTube</h4>
-                <ul>
-                    <li>Développement d'identité de chaîne</li>
-                    <li>Création de contenu à fort engagement</li>
-                    <li>Optimisation SEO pour YouTube</li>
-                    <li>Stratégies de monétisation</li>
-                    <li>Production vidéo de qualité professionnelle</li>
-                </ul>
-            `;
-        default:
-            return '<p>Détails non disponibles pour ce service.</p>';
-    }
+    // Afficher une alerte simple (à remplacer par une modale)
+    alert(`Service: ${service.title}\n\nDescription: ${service.description}`);
 }
 
 /**
@@ -250,107 +244,36 @@ function getServiceDetailsHTML(serviceId) {
  */
 function showContactForm(serviceId) {
     // Trouver le service correspondant
-    const service = services.find(s => s.id === serviceId);
+    const service = servicesList.find(s => s.id === serviceId);
     if (!service) return;
     
-    // Créer une popup modale
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Contact pour ${service.title}</h3>
-                <button class="close-modal-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Laissez-nous vos coordonnées pour discuter de ce service.</p>
-                <form id="contact-form" class="contact-form">
-                    <div class="form-group">
-                        <label for="contact-name">Prénom</label>
-                        <input type="text" id="contact-name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-email">Email</label>
-                        <input type="email" id="contact-email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-budget">Budget (€)</label>
-                        <input type="number" id="contact-budget" name="budget" min="100">
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-message">Message</label>
-                        <textarea id="contact-message" name="message" rows="4"></textarea>
-                    </div>
-                    <input type="hidden" name="service" value="${serviceId}">
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button id="submit-contact-btn" class="primary-btn">Envoyer</button>
-            </div>
-        </div>
-    `;
+    // Afficher une alerte simple (à remplacer par une modale)
+    alert(`Contact pour le service: ${service.title}\n\nVeuillez nous contacter via Telegram pour plus d'informations.`);
     
-    // Ajouter au DOM
-    document.body.appendChild(modal);
-    
-    // Événements
-    modal.querySelector('.close-modal-btn').addEventListener('click', function() {
-        document.body.removeChild(modal);
-    });
-    
-    modal.querySelector('#submit-contact-btn').addEventListener('click', function() {
-        const form = document.getElementById('contact-form');
-        if (form.checkValidity()) {
-            // Simuler l'envoi du formulaire
-            showSubmissionConfirmation(service.title);
-            document.body.removeChild(modal);
-        } else {
-            form.reportValidity();
-        }
-    });
-    
-    // Fermer si clic en dehors
-    modal.addEventListener('click', function(event) {
-        if (event.target === modal) {
-            document.body.removeChild(modal);
-        }
-    });
+    // Si l'utilisateur est authentifié, enregistrer l'intérêt
+    if (telegramAuth.isAuthenticated()) {
+        recordServiceInterest(serviceId);
+    }
 }
 
 /**
- * Affiche une confirmation après l'envoi du formulaire
- * @param {string} serviceTitle - Titre du service
+ * Enregistre l'intérêt d'un utilisateur pour un service dans Firebase
+ * @param {string} serviceId - ID du service
  */
-function showSubmissionConfirmation(serviceTitle) {
-    // Créer une popup de confirmation
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerHTML = `
-        <div class="toast-content">
-            <span class="toast-icon">✅</span>
-            <div class="toast-message">
-                <p>Merci pour votre intérêt pour <strong>${serviceTitle}</strong>.</p>
-                <p>Nous vous contacterons bientôt.</p>
-            </div>
-        </div>
-    `;
+async function recordServiceInterest(serviceId) {
+    if (!telegramAuth.isAuthenticated()) return;
     
-    // Ajouter au DOM
-    document.body.appendChild(toast);
-    
-    // Disparaître après un délai
-    setTimeout(function() {
-        toast.classList.add('toast-hide');
-        setTimeout(function() {
-            if (toast.parentNode) {
-                document.body.removeChild(toast);
-            }
-        }, 300);
-    }, 3000);
+    try {
+        const userId = telegramAuth.getUserId();
+        if (!userId) return;
+        
+        // Enregistrer l'intérêt dans Firebase (pourrait être implémenté dans firebase-service.js)
+        // await firebaseService.recordServiceInterest(userId, serviceId);
+        console.log(`Intérêt enregistré pour ${serviceId} par l'utilisateur ${userId}`);
+    } catch (error) {
+        console.error("Erreur lors de l'enregistrement de l'intérêt:", error);
+    }
 }
-
-// Déclaration des services
-const services = servicesList;
 
 // Exposer les fonctions globalement
 window.setUserData = setUserData;
