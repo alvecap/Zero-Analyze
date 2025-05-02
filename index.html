@@ -161,10 +161,12 @@
             justify-content: center;
             gap: 15px;
             margin-top: 20px;
+            width: 100%;
         }
 
         .form-nav .btn {
             width: 45%;
+            max-width: 200px;
         }
 
         input {
@@ -187,9 +189,9 @@
 
         /* COMPOSANTS */
         .logo {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: bold;
-            margin: 20px 0;
+            margin: 15px 0;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -198,9 +200,9 @@
         }
         
         .logo-container {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 20px;
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 15px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -297,33 +299,28 @@
             box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4);
         }
         
+        .confidence-container {
+            display: inline-block;
+            padding: 3px;
+            margin-top: 15px;
+            border: 2px solid var(--success);
+            border-radius: 22px;
+            box-shadow: 0 5px 10px rgba(16, 185, 129, 0.3);
+        }
+        
         .confidence-badge {
             display: inline-block;
             padding: 5px 12px;
             border-radius: 20px;
             font-weight: bold;
             color: white;
-            margin-top: 15px;
             font-size: 14px;
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+            background-color: var(--success);
             transition: all 0.3s ease;
         }
         
         .confidence-badge:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
-        }
-        
-        .confidence-high {
-            background: linear-gradient(135deg, var(--confidence-high), #0d9488);
-        }
-        
-        .confidence-medium {
-            background: linear-gradient(135deg, var(--confidence-medium), #d97706);
-        }
-        
-        .confidence-low {
-            background: linear-gradient(135deg, var(--confidence-low), #dc2626);
         }
         
         .argument-list {
@@ -359,33 +356,74 @@
             color: var(--text-light);
         }
 
-        /* ANIMATIONS */
-        .spinner {
-            width: 60px;
-            height: 60px;
+        /* ANIMATIONS 3D pour le chargement */
+        .loading-container {
             margin: 30px auto;
+            perspective: 800px;
+            width: 100px;
+            height: 100px;
             position: relative;
         }
 
-        .spinner:before, .spinner:after {
-            content: '';
-            position: absolute;
+        .cube {
             width: 100%;
             height: 100%;
-            border-radius: 50%;
-            background-color: var(--primary);
-            opacity: 0.6;
-            animation: sk-bounce 2.0s infinite ease-in-out;
+            position: absolute;
+            transform-style: preserve-3d;
+            animation: cube-rotate 5s infinite linear;
         }
 
-        .spinner:after {
-            background-color: var(--secondary);
-            animation-delay: -1.0s;
+        .cube-face {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            opacity: 0.8;
+            border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
         }
 
-        @keyframes sk-bounce {
-            0%, 100% { transform: scale(0.0); }
-            50% { transform: scale(1.0); }
+        .front {
+            transform: translateZ(50px);
+            background: linear-gradient(45deg, var(--primary), var(--primary-light));
+        }
+
+        .back {
+            transform: rotateY(180deg) translateZ(50px);
+            background: linear-gradient(45deg, var(--primary-light), var(--primary));
+        }
+
+        .right {
+            transform: rotateY(90deg) translateZ(50px);
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+        }
+
+        .left {
+            transform: rotateY(-90deg) translateZ(50px);
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+        }
+
+        .top {
+            transform: rotateX(90deg) translateZ(50px);
+            background: linear-gradient(45deg, var(--primary-light), var(--secondary));
+        }
+
+        .bottom {
+            transform: rotateX(-90deg) translateZ(50px);
+            background: linear-gradient(45deg, var(--secondary), var(--primary-light));
+        }
+
+        @keyframes cube-rotate {
+            0% {
+                transform: rotateX(0deg) rotateY(0deg);
+            }
+            100% {
+                transform: rotateX(360deg) rotateY(360deg);
+            }
         }
 
         .loading-text {
@@ -458,12 +496,12 @@
         <!-- PAGE D'ACCUEIL -->
         <section id="home" class="page active">
             <div class="logo-container">
-                <svg width="120" height="120" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="55" fill="none" stroke="#6366f1" stroke-width="3" />
-                    <circle cx="60" cy="60" r="45" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3" />
-                    <path d="M35,60 L55,40 L65,50 L85,30" fill="none" stroke="#6366f1" stroke-width="4" />
-                    <circle cx="85" cy="30" r="6" fill="#f59e0b" />
-                    <text x="45" y="80" font-family="Arial" font-size="14" font-weight="bold" fill="#333">ZERO</text>
+                <svg width="90" height="90" viewBox="0 0 90 90">
+                    <circle cx="45" cy="45" r="40" fill="none" stroke="#6366f1" stroke-width="3" />
+                    <circle cx="45" cy="45" r="30" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3" />
+                    <path d="M25,45 L40,30 L50,40 L65,25" fill="none" stroke="#6366f1" stroke-width="4" />
+                    <circle cx="65" cy="25" r="6" fill="#f59e0b" />
+                    <text x="32" y="60" font-family="Arial" font-size="12" font-weight="bold" fill="#333">ZERO</text>
                 </svg>
             </div>
             <div class="logo">ZERO ANALYZE</div>
@@ -481,7 +519,7 @@
                 </div>
                 <div class="argument-item">
                     <div class="argument-icon">💡</div>
-                    <div class="argument-text">Battez le bookmaker avec ses propres codes - interprétez ce qu'ils ne veulent pas vous dire</div>
+                    <div class="argument-text">Battez le bookmaker avec ses propres cotes - interprétez ce qu'ils ne veulent pas vous dire</div>
                 </div>
                 <div class="argument-item">
                     <div class="argument-icon">⚡</div>
@@ -513,7 +551,16 @@
             <h2>Prédiction</h2>
             
             <div id="loading" class="hidden">
-                <div class="spinner"></div>
+                <div class="loading-container">
+                    <div class="cube">
+                        <div class="cube-face front">ZERO</div>
+                        <div class="cube-face back">ANALYZE</div>
+                        <div class="cube-face right">COTES</div>
+                        <div class="cube-face left">PREDI</div>
+                        <div class="cube-face top">PARIS</div>
+                        <div class="cube-face bottom">GAINS</div>
+                    </div>
+                </div>
                 <p class="loading-text">Analyse des cotes en cours...</p>
                 <p class="loading-text">Traitement des probabilités...</p>
                 <p class="loading-text">Lecture entre les lignes...</p>
@@ -527,7 +574,9 @@
                         <div id="score-2" class="score">1-1</div>
                     </div>
                     <div class="centered">
-                        <span id="score-confidence" class="confidence-badge confidence-high">Confiance 98%</span>
+                        <div class="confidence-container">
+                            <span id="score-confidence" class="confidence-badge">Confiance 98%</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -535,7 +584,9 @@
                     <h3>Résultat du match</h3>
                     <p id="match-result" class="centered">Match nul</p>
                     <div class="centered">
-                        <span id="result-confidence" class="confidence-badge confidence-high">Confiance 95%</span>
+                        <div class="confidence-container">
+                            <span id="result-confidence" class="confidence-badge">Confiance 95%</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -543,7 +594,9 @@
                     <h3>Nombre de buts</h3>
                     <p id="goals-prediction" class="centered">Moins de 3,5 buts</p>
                     <div class="centered">
-                        <span id="goals-confidence" class="confidence-badge confidence-high">Confiance 97%</span>
+                        <div class="confidence-container">
+                            <span id="goals-confidence" class="confidence-badge">Confiance 97%</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -665,7 +718,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 { id: "htHomeWin", label: "Cote pour la victoire de l'équipe à domicile en première mi-temps", hint: "Entrer la cote", required: true },
                 { id: "htDraw", label: "Cote pour un match nul à la mi-temps", hint: "Entrer la cote", required: true },
                 { id: "htAwayWin", label: "Cote pour la victoire de l'équipe à l'extérieur en première mi-temps", hint: "Entrer la cote", required: true },
-                { id: "htOver05", label: "Cote pour plus de 0,5 but en première mi-temps", hint: "Entrer la cote", required: true }
+                { id: "htHomeOver05", label: "Cote pour que l'équipe à domicile marque plus de 0,5 but en première mi-temps", hint: "Entrer la cote", required: true },
+                { id: "htAwayOver05", label: "Cote pour que l'équipe à l'extérieur marque plus de 0,5 but en première mi-temps", hint: "Entrer la cote", required: true }
             ]
         },
         {
@@ -914,28 +968,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('result-confidence').textContent = `Confiance ${resultConfidence}%`;
             document.getElementById('goals-confidence').textContent = `Confiance ${goalsConfidence}%`;
             
-            // Définir la classe de confiance en fonction du pourcentage
-            setConfidenceClass('score-confidence', scoreConfidence);
-            setConfidenceClass('result-confidence', resultConfidence);
-            setConfidenceClass('goals-confidence', goalsConfidence);
-            
             // Masquer le chargement et afficher les résultats
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('prediction-results').classList.remove('hidden');
         }, 3000);
-    }
-
-    function setConfidenceClass(elementId, confidence) {
-        const element = document.getElementById(elementId);
-        element.classList.remove('confidence-high', 'confidence-medium', 'confidence-low');
-        
-        if (confidence >= 98) {
-            element.classList.add('confidence-high');
-        } else if (confidence >= 96) {
-            element.classList.add('confidence-medium');
-        } else {
-            element.classList.add('confidence-low');
-        }
     }
     
     function generatePrediction() {
