@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 4000);
     }
     
-    // Démarrer le questionnaire avec animation
+    // Démarrer le questionnaire avec animation - FONCTION CORRIGÉE
     window.startQuestionnaire = function() {
         console.log("Démarrage du questionnaire");
         
@@ -178,13 +178,21 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 startButton.classList.remove('btn-loading');
                 
-                if (window.resetQuestionnaire) {
+                // S'assurer que resetQuestionnaire existe avant de l'appeler
+                if (typeof window.resetQuestionnaire === 'function') {
                     window.resetQuestionnaire();
+                } else {
+                    console.warn("La fonction resetQuestionnaire n'est pas disponible");
                 }
+                
+                // Naviguer vers la page du questionnaire
                 window.navigateTo('questionnaire');
             }, 800); // Délai d'animation
         } else {
-            if (window.resetQuestionnaire) {
+            console.error("Bouton 'start-btn' non trouvé");
+            
+            // Tentative de navigation directe en cas d'échec
+            if (typeof window.resetQuestionnaire === 'function') {
                 window.resetQuestionnaire();
             }
             window.navigateTo('questionnaire');
@@ -348,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // PARTIE 6: GESTION DES PROFILS ET SERVICES
     // ======================================================
     
-    // Chargement du profil utilisateur
+    // Chargement du profil utilisateur - AMÉLIORÉ
     function loadUserProfile() {
         const profileContent = document.getElementById('profile-content');
         if (!profileContent) return;
@@ -377,6 +385,13 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (telegramApp && telegramApp.initDataUnsafe?.user) {
             // Utilisateur Telegram mais pas encore dans Firebase
             const user = telegramApp.initDataUnsafe.user;
+            
+            // Authentifier l'utilisateur avec les données Telegram
+            authenticateUser(user).then(() => {
+                loadUserProfile(); // Recharger le profil après authentification
+            });
+            
+            // Afficher un message de chargement en attendant
             profileContent.innerHTML = `
                 <div class="profile-info">
                     <div class="profile-picture">
@@ -388,8 +403,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 <div class="profile-details">
-                    <p>Bienvenue dans ZERO ANALYZE, votre application de prédiction sportive basée uniquement sur les cotes.</p>
-                    <p>Vos prédictions sont générées automatiquement grâce à nos algorithmes avancés.</p>
+                    <p>Chargement de votre profil ZERO ANALYZE...</p>
+                    <div class="loading-animation" style="text-align: center; margin: 20px 0;">
+                        <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(99, 102, 241, 0.3); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite;"></div>
+                    </div>
                 </div>
             `;
         } else {
@@ -404,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Chargement des statistiques de l'utilisateur
+    // Chargement des statistiques de l'utilisateur - AMÉLIORÉ
     async function loadUserStats() {
         if (!db || !currentUser || !currentUser.id) return;
         
@@ -652,8 +669,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Fermer le modal avec un événement onclick
         const closeButton = document.getElementById('close-limit-modal');
-        if (closeButton) {
-            closeButton.onclick = function() {
+        if (closeButton) {closeButton.onclick = function() {
                 modal.style.opacity = 0;
                 setTimeout(() => {
                     document.body.removeChild(modal);
@@ -877,7 +893,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 username: currentUser?.username || (telegramApp?.initDataUnsafe?.user?.username || null)
             };
             
-            // Enregistrer dans Firestore
             // Enregistrer dans Firestore
             await db.collection('service_interests').add(interestData);
             
