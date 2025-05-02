@@ -1,4 +1,7 @@
-// questions.js - Gestion du système de questionnaire étape par étape
+// questions.js - Gestion du système de questionnaire étape par étape avec intégration Firebase
+
+import telegramAuth from './telegram-auth.js';
+import predictionLimits from './prediction-limits.js';
 
 // Configuration des étapes du questionnaire
 const questionnaireSteps = [
@@ -206,7 +209,18 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Réinitialisation complète du questionnaire
-function resetQuestionnaire() {
+async function resetQuestionnaire() {
+    // Vérifier d'abord si l'utilisateur peut faire une prédiction
+    if (telegramAuth.isAuthenticated()) {
+        const limitStatus = await predictionLimits.canMakePrediction(telegramAuth.getUserId());
+        
+        if (!limitStatus.allowed) {
+            // Afficher un message si l'utilisateur a atteint sa limite
+            showLimitReachedMessage(limitStatus.message);
+            return;
+        }
+    }
+    
     // Réinitialiser les variables
     currentStep = 0;
     userAnswers = {};
@@ -221,14 +235,44 @@ function resetQuestionnaire() {
     updateNavigationButtons();
 }
 
+// Afficher un message lorsque la limite est atteinte
+function showLimitReachedMessage(message) {
+    const container = document.getElementById('questions-container');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="error-message centered">
+            <div class="error-icon">⏱️</div>
+            <h3>Limite atteinte</h3>
+            <p>${message}</p>
+            <button id="back-to-home-btn" class="btn">Retour à l'accueil</button>
+        </div>
+    `;
+    
+    // Configurer le bouton de retour
+    const backButton = document.getElementById('back-to-home-btn');
+    if (backButton) {
+        backButton.addEventListener('click', () => window.zeroAnalyzeApp.navigateTo('home'));
+    }
+    
+    // Masquer les boutons de navigation
+    const prevButton = document.getElementById('prev-btn');
+    const nextButton = document.getElementById('next-btn');
+    
+    if (prevButton) prevButton.style.display = 'none';
+    if (nextButton) nextButton.style.display = 'none';
+}
+
 // Générer les indicateurs d'étapes
 function generateStepIndicators() {
-    const container = document.querySelector('.step-indicators');
+    const container = document.querySelector('.steps');
+    if (!container) return;
+    
     container.innerHTML = '';
     
     questionnaireSteps.forEach((step, index) => {
         const indicator = document.createElement('div');
-        indicator.className = 'step-indicator';
+        indicator.className = 'step';
         if (index === 0) indicator.classList.add('active');
         container.appendChild(indicator);
     });
@@ -239,35 +283,30 @@ function loadCurrentStep() {
     // Obtenir l'étape actuelle
     const step = questionnaireSteps[currentStep];
     const container = document.getElementById('questions-container');
+    if (!container) return;
     
     // Vider le contenu précédent
     container.innerHTML = '';
     
-    // Ajouter le titre de l'étape
-    const title = document.createElement('h2');
-    title.textContent = step.title;
-    container.appendChild(title);
-    
-    // Créer le groupe de questions
-    const questionGroup = document.createElement('div');
-    questionGroup.className = 'question-group';
-    container.appendChild(questionGroup);
+    // Mettre à jour le titre de l'étape
+    const stepTitleElement = document.getElementById('step-title');
+    if (stepTitleElement) {
+        stepTitleElement.textContent = step.title;
+    }
     
     // Ajouter les questions
     step.questions.forEach(question => {
-        const inputContainer = document.createElement('div');
-        inputContainer.className = 'input-container';
+        const questionGroup = document.createElement('div');
+        questionGroup.className = 'question-group';
         
         const label = document.createElement('label');
         label.className = 'question-label';
         label.htmlFor = question.id;
         label.textContent = question.label;
-        inputContainer.appendChild(label);
         
-        const legend = document.createElement('div');
-        legend.className = 'question-legend';
-        legend.textContent = question.legend;
-        inputContainer.appendChild(legend);
+        const hint = document.createElement('div');
+        hint.className = 'question-hint';
+        hint.textContent = question.legend;
         
         const input = document.createElement('input');
         input.type = question.type;
@@ -275,20 +314,26 @@ function loadCurrentStep() {
         input.name = question.id;
         input.step = '0.01';
         input.min = '1';
+        input.required = question.required;
         
         // Restaurer la valeur si déjà répondue
         if (userAnswers[question.id]) {
             input.value = userAnswers[question.id];
         }
         
-        inputContainer.appendChild(input);
-        questionGroup.appendChild(inputContainer);
+        questionGroup.appendChild(label);
+        questionGroup.appendChild(hint);
+        questionGroup.appendChild(input);
+        container.appendChild(questionGroup);
     });
     
-    // Ajouter un message spécial si nécessaire (pour l'étape du handicap)
+    // Ajouter un message spécial si nécessaire
     if (step.specialMessage) {
-        const specialMessage = document.createElement('div');
-        specialMessage.className = 'question-legend centered mt-2';
+        const specialMessage = document.createElement('p');
+        specialMessage.className = 'centered';
+        specialMessage.style.fontSize = '14px';
+        specialMessage.style.color = 'var(--text-light)';
+        specialMessage.style.marginTop = '10px';
         specialMessage.textContent = step.specialMessage;
         container.appendChild(specialMessage);
     }
@@ -302,19 +347,18 @@ function loadCurrentStep() {
 
 // Mise à jour de la barre de progression
 function updateProgressBar() {
-    const progressFill = document.querySelector('.progress-fill');
+    const progressBar = document.getElementById('progress-bar');
+    if (!progressBar) return;
+    
     const progress = (currentStep / (questionnaireSteps.length - 1)) * 100;
-    progressFill.style.width = `${progress}%`;
+    progressBar.style.width = `${progress}%`;
 }
 
 // Mise à jour des indicateurs d'étape
 function updateStepIndicators() {
-    const indicators = document.querySelectorAll('.step-indicator');
+    const indicators = document.querySelectorAll('.step');
     indicators.forEach((indicator, index) => {
-        indicator.classList.remove('active');
-        if (index === currentStep) {
-            indicator.classList.add('active');
-        }
+        indicator.classList.toggle('active', index === currentStep);
     });
 }
 
@@ -322,6 +366,8 @@ function updateStepIndicators() {
 function updateNavigationButtons() {
     const prevButton = document.getElementById('prev-btn');
     const nextButton = document.getElementById('next-btn');
+    
+    if (!prevButton || !nextButton) return;
     
     // Bouton précédent
     if (currentStep === 0) {
@@ -348,14 +394,30 @@ function navigateToPreviousStep() {
 }
 
 // Navigation vers l'étape suivante ou soumission
-function navigateToNextStep() {
+async function navigateToNextStep() {
     // Sauvegarder les réponses de l'étape actuelle
     if (!saveCurrentStepAnswers()) {
         return; // Validation échouée
     }
     
-    // Vérifier si c'est la dernière étape
+    // Vérifier l'authentification et les limites à la dernière étape
     if (currentStep === questionnaireSteps.length - 1) {
+        // Vérifier l'authentification
+        if (!telegramAuth.isAuthenticated()) {
+            const container = document.getElementById('questions-container');
+            if (container) {
+                telegramAuth.showAuthError(container);
+            }
+            return;
+        }
+        
+        // Vérifier les limites de prédiction
+        const limitStatus = await predictionLimits.canMakePrediction(telegramAuth.getUserId());
+        if (!limitStatus.allowed) {
+            showLimitReachedMessage(limitStatus.message);
+            return;
+        }
+        
         // Soumettre le formulaire
         submitForm();
     } else {
@@ -374,6 +436,8 @@ function saveCurrentStepAnswers() {
     // Vérifier et sauvegarder chaque réponse
     step.questions.forEach(question => {
         const input = document.getElementById(question.id);
+        if (!input) return;
+        
         const value = input.value.trim();
         
         // Validation
@@ -396,12 +460,33 @@ function saveCurrentStepAnswers() {
 
 // Soumission du formulaire
 function submitForm() {
-    // Envoyer les données au modèle de prédiction
-    const prediction = generatePrediction(userAnswers);
+    // Vérifier si l'utilisateur est authentifié
+    if (!telegramAuth.isAuthenticated()) {
+        // Afficher un message d'erreur
+        const container = document.getElementById('questions-container');
+        if (container) {
+            telegramAuth.showAuthError(container);
+        }
+        return;
+    }
     
-    // Afficher les résultats
-    window.zeroAnalyzeApp.showResults(prediction);
+    // Générer et afficher les résultats de la prédiction
+    if (window.generatePrediction) {
+        const prediction = window.generatePrediction(userAnswers);
+        
+        // Ajouter l'ID utilisateur pour l'enregistrement
+        prediction.userId = telegramAuth.getUserId();
+        
+        // Afficher les résultats via l'API globale
+        if (window.zeroAnalyzeApp && window.zeroAnalyzeApp.showResults) {
+            window.zeroAnalyzeApp.showResults(prediction);
+        }
+    } else {
+        console.error("Fonction de prédiction non disponible");
+    }
 }
 
-// Fonction globale
+// Exposer les fonctions globalement
 window.resetQuestionnaire = resetQuestionnaire;
+window.navigateToPreviousStep = navigateToPreviousStep;
+window.navigateToNextStep = navigateToNextStep;
