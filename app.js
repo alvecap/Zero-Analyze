@@ -1,30 +1,39 @@
 // app.js - Logique principale optimisée pour Telegram WebApp avec Firebase
 
+// Importation des modules
 import telegramAuth from './telegram-auth.js';
 import firebaseService from './firebase-service.js';
 import predictionLimits from './prediction-limits.js';
 
+// Attendre que le DOM soit complètement chargé
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initialisation de l\'application...');
+    
     // Initialisation de l'application Telegram WebApp
-    let telegramApp;
+    let telegramApp = null;
     try {
-        telegramApp = window.Telegram.WebApp;
-        // Informer Telegram que l'app est prête
-        telegramApp.ready();
-        // Expansion de l'app pour utiliser tout l'écran disponible
-        telegramApp.expand();
-        
-        // Appliquer les couleurs du thème Telegram si disponibles
-        if (telegramApp.themeParams) {
-            document.documentElement.style.setProperty('--tg-theme-bg-color', telegramApp.themeParams.bg_color || '#f8f9fa');
-            document.documentElement.style.setProperty('--tg-theme-text-color', telegramApp.themeParams.text_color || '#333333');
-            document.documentElement.style.setProperty('--tg-theme-button-color', telegramApp.themeParams.button_color || '#6366f1');
-            document.documentElement.style.setProperty('--tg-theme-button-text-color', telegramApp.themeParams.button_text_color || '#ffffff');
-            document.documentElement.style.setProperty('--tg-theme-hint-color', telegramApp.themeParams.hint_color || '#999999');
-            document.documentElement.style.setProperty('--tg-theme-link-color', telegramApp.themeParams.link_color || '#2481cc');
+        if (window.Telegram && window.Telegram.WebApp) {
+            telegramApp = window.Telegram.WebApp;
+            // Informer Telegram que l'app est prête
+            telegramApp.ready();
+            // Expansion de l'app pour utiliser tout l'écran disponible
+            telegramApp.expand();
+            
+            // Appliquer les couleurs du thème Telegram si disponibles
+            if (telegramApp.themeParams) {
+                document.documentElement.style.setProperty('--tg-theme-bg-color', telegramApp.themeParams.bg_color || '#f8f9fa');
+                document.documentElement.style.setProperty('--tg-theme-text-color', telegramApp.themeParams.text_color || '#333333');
+                document.documentElement.style.setProperty('--tg-theme-button-color', telegramApp.themeParams.button_color || '#6366f1');
+                document.documentElement.style.setProperty('--tg-theme-button-text-color', telegramApp.themeParams.button_text_color || '#ffffff');
+                document.documentElement.style.setProperty('--tg-theme-hint-color', telegramApp.themeParams.hint_color || '#999999');
+                document.documentElement.style.setProperty('--tg-theme-link-color', telegramApp.themeParams.link_color || '#2481cc');
+            }
+            console.log('Initialisation Telegram WebApp réussie');
+        } else {
+            console.warn('Telegram WebApp non disponible, utilisation en mode autonome');
         }
     } catch (error) {
-        console.error('Telegram WebApp non disponible:', error);
+        console.error('Telegram WebApp erreur:', error);
     }
 
     // Éléments du DOM
@@ -39,6 +48,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Configuration de la navigation principale
     function navigateTo(pageId, direction = 'forward') {
+        console.log(`Navigation vers: ${pageId}`);
+        
         // Masquer toutes les pages
         pages.forEach(page => {
             page.classList.remove('active');
@@ -46,7 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Afficher la page demandée
         const targetPage = document.getElementById(pageId);
-        targetPage.classList.add('active');
+        if (targetPage) {
+            targetPage.classList.add('active');
+        } else {
+            console.error(`Page non trouvée: ${pageId}`);
+            return;
+        }
 
         // Mettre à jour les boutons de navigation
         navButtons.forEach(btn => {
@@ -91,46 +107,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Vérification des limites de prédictions avant d'ouvrir le questionnaire
     async function checkPredictionLimitsBeforeQuestionnaire() {
+        console.log('Vérification des limites de prédictions...');
+        
         if (!telegramAuth.isAuthenticated()) {
+            console.warn('Utilisateur non authentifié');
             showAuthenticationError();
             return;
         }
         
         const userId = telegramAuth.getUserId();
-        const limitStatus = await predictionLimits.canMakePrediction(userId);
-        
-        if (!limitStatus.allowed) {
-            // Afficher un message d'erreur et rediriger vers la page d'accueil
-            const questionsContainer = document.getElementById('questions-container');
-            if (questionsContainer) {
-                questionsContainer.innerHTML = `
-                    <div class="error-message centered">
-                        <div class="error-icon">⏱️</div>
-                        <h3>Limite atteinte</h3>
-                        <p>${limitStatus.message}</p>
-                        <button id="back-to-home-btn" class="btn">Retour à l'accueil</button>
-                    </div>
-                `;
-                
-                // Configurer le bouton de retour
-                const backButton = document.getElementById('back-to-home-btn');
-                if (backButton) {
-                    backButton.addEventListener('click', () => navigateTo('home'));
+        try {
+            const limitStatus = await predictionLimits.canMakePrediction(userId);
+            console.log('Statut des limites:', limitStatus);
+            
+            if (!limitStatus.allowed) {
+                // Afficher un message d'erreur et rediriger vers la page d'accueil
+                const questionsContainer = document.getElementById('questions-container');
+                if (questionsContainer) {
+                    questionsContainer.innerHTML = `
+                        <div class="error-message centered">
+                            <div class="error-icon">⏱️</div>
+                            <h3>Limite atteinte</h3>
+                            <p>${limitStatus.message}</p>
+                            <button id="back-to-home-btn" class="btn">Retour à l'accueil</button>
+                        </div>
+                    `;
+                    
+                    // Configurer le bouton de retour
+                    const backButton = document.getElementById('back-to-home-btn');
+                    if (backButton) {
+                        backButton.addEventListener('click', () => navigateTo('home'));
+                    }
+                    
+                    // Masquer les boutons de navigation du questionnaire
+                    if (prevButton) prevButton.style.display = 'none';
+                    if (nextButton) nextButton.style.display = 'none';
+                }
+            } else {
+                // Afficher le questionnaire normalement
+                if (window.resetQuestionnaire) {
+                    window.resetQuestionnaire();
                 }
                 
-                // Masquer les boutons de navigation du questionnaire
-                if (prevButton) prevButton.style.display = 'none';
-                if (nextButton) nextButton.style.display = 'none';
+                // Afficher les boutons de navigation
+                if (prevButton) prevButton.style.display = '';
+                if (nextButton) nextButton.style.display = '';
             }
-        } else {
-            // Afficher le questionnaire normalement
+        } catch (error) {
+            console.error('Erreur lors de la vérification des limites:', error);
+            
+            // En cas d'erreur, permettre quand même d'accéder au questionnaire
             if (window.resetQuestionnaire) {
                 window.resetQuestionnaire();
             }
-            
-            // Afficher les boutons de navigation
-            if (prevButton) prevButton.style.display = '';
-            if (nextButton) nextButton.style.display = '';
         }
     }
 
@@ -147,85 +176,116 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initialisation des événements de navigation
-    navButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const pageId = this.id.replace('nav-', '');
-            navigateTo(pageId);
+    function initNavigationButtons() {
+        console.log('Initialisation des boutons de navigation...');
+        
+        // Boutons de navigation principale
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                console.log(`Clic sur bouton nav: ${this.id}`);
+                const pageId = this.id.replace('nav-', '');
+                navigateTo(pageId);
+            });
         });
-    });
 
-    // Bouton de démarrage
-    if (startButton) {
-        startButton.addEventListener('click', async function() {
-            // Vérifier d'abord l'authentification
-            if (!telegramAuth.isAuthenticated()) {
-                // Tenter d'initialiser l'authentification
-                const authSuccess = await telegramAuth.initialize();
-                if (!authSuccess) {
-                    showAuthenticationError();
-                    return;
+        // Bouton de démarrage
+        if (startButton) {
+            startButton.addEventListener('click', async function() {
+                console.log('Clic sur bouton démarrer');
+                // Vérifier d'abord l'authentification
+                if (!telegramAuth.isAuthenticated()) {
+                    // Tenter d'initialiser l'authentification
+                    const authSuccess = await telegramAuth.initialize();
+                    if (!authSuccess) {
+                        showAuthenticationError();
+                        return;
+                    }
                 }
-            }
-            
-            // Initialiser les limites de prédictions
-            if (!predictionLimits.initialized) {
-                await predictionLimits.initialize(telegramAuth.getUserId());
-            }
-            
-            // Commencer le questionnaire
-            navigateTo('questionnaire');
-        });
-    }
+                
+                // Initialiser les limites de prédictions
+                if (!predictionLimits.initialized) {
+                    await predictionLimits.initialize(telegramAuth.getUserId());
+                }
+                
+                // Commencer le questionnaire
+                navigateTo('questionnaire');
+            });
+        } else {
+            console.error('Bouton de démarrage non trouvé');
+        }
 
-    // Bouton retour à l'accueil depuis les résultats
-    if (homeButton) {
-        homeButton.addEventListener('click', function() {
-            navigateTo('home');
-        });
-    }
+        // Bouton retour à l'accueil depuis les résultats
+        if (homeButton) {
+            homeButton.addEventListener('click', function() {
+                console.log('Clic sur bouton accueil');
+                navigateTo('home');
+            });
+        } else {
+            console.error('Bouton accueil non trouvé');
+        }
 
-    // Bouton nouvelle prédiction
-    if (newPredictionButton) {
-        newPredictionButton.addEventListener('click', async function() {
-            // Vérifier les limites avant de démarrer un nouveau questionnaire
-            await checkPredictionLimitsBeforeQuestionnaire();
-        });
-    }
+        // Bouton nouvelle prédiction
+        if (newPredictionButton) {
+            newPredictionButton.addEventListener('click', async function() {
+                console.log('Clic sur bouton nouvelle prédiction');
+                // Vérifier les limites avant de démarrer un nouveau questionnaire
+                await checkPredictionLimitsBeforeQuestionnaire();
+            });
+        } else {
+            console.error('Bouton nouvelle prédiction non trouvé');
+        }
 
-    // Boutons de navigation du questionnaire
-    if (prevButton) {
-        prevButton.addEventListener('click', function() {
-            if (window.navigateToPreviousStep) {
-                window.navigateToPreviousStep();
-            }
-        });
-    }
-    
-    if (nextButton) {
-        nextButton.addEventListener('click', function() {
-            if (window.navigateToNextStep) {
-                window.navigateToNextStep();
-            }
-        });
+        // Boutons de navigation du questionnaire
+        if (prevButton) {
+            prevButton.addEventListener('click', function() {
+                console.log('Clic sur bouton précédent');
+                if (window.navigateToPreviousStep) {
+                    window.navigateToPreviousStep();
+                }
+            });
+        } else {
+            console.error('Bouton précédent non trouvé');
+        }
+        
+        if (nextButton) {
+            nextButton.addEventListener('click', function() {
+                console.log('Clic sur bouton suivant');
+                if (window.navigateToNextStep) {
+                    window.navigateToNextStep();
+                }
+            });
+        } else {
+            console.error('Bouton suivant non trouvé');
+        }
     }
 
     // Initialisation de l'application
-    function initApp() {
+    async function initApp() {
+        console.log('Initialisation de l\'application...');
+        
         // Initialisation de l'authentification Telegram
-        initializeTelegramAuth();
+        await initializeTelegramAuth();
+        
+        // Initialisation des événements
+        initNavigationButtons();
         
         // Préchargement des services
         if (window.loadServices) {
             window.loadServices();
         }
+        
+        console.log('Initialisation terminée!');
     }
 
     // Initialisation de l'authentification Telegram
     async function initializeTelegramAuth() {
+        console.log('Initialisation de l\'authentification Telegram...');
+        
         try {
             const authSuccess = await telegramAuth.initialize();
             
             if (authSuccess) {
+                console.log('Authentification réussie');
                 // Utilisateur authentifié - initialiser les limites de prédiction
                 await predictionLimits.initialize(telegramAuth.getUserId());
                 
@@ -239,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     predictionLimits.displayLimitBanner(limitBannerContainer);
                 }
             } else {
+                console.warn('Échec d\'authentification');
                 // Échec d'authentification - mettre à jour l'interface utilisateur
                 const profileContent = document.getElementById('profile-content');
                 if (profileContent) {
@@ -256,6 +317,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Afficher les résultats avec sauvegarde dans Firebase
         showResults: async function(results) {
+            console.log('Affichage des résultats:', results);
+            
             // Vérifier l'authentification avant d'enregistrer
             if (!telegramAuth.isAuthenticated()) {
                 navigateTo('results');
@@ -291,6 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Enregistrer dans Firebase et vérifier les limites
                 const saveResult = await predictionLimits.recordPrediction(userId, predictionData);
+                console.log('Résultat de l\'enregistrement:', saveResult);
                 
                 // Simuler le traitement
                 setTimeout(function() {
@@ -355,6 +419,8 @@ document.addEventListener('DOMContentLoaded', function() {
         showError: function(message, element) {
             if (!element) return;
             
+            console.log(`Affichage d'erreur: ${message}`);
+            
             // Créer le message d'erreur
             const errorMessage = document.createElement('div');
             errorMessage.className = 'error-message';
@@ -377,6 +443,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Ouvrir une URL externe dans Telegram
         openExternalLink: function(url) {
+            console.log(`Ouverture du lien: ${url}`);
+            
             if (telegramApp && telegramApp.openLink) {
                 telegramApp.openLink(url);
             } else {
@@ -405,6 +473,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Gestion du bouton retour principal de Telegram
         telegramApp.BackButton.onClick(function() {
+            console.log('Bouton retour Telegram activé');
+            
             const activePage = document.querySelector('.page.active');
             if (activePage && activePage.id !== 'home') {
                 navigateTo('home');
