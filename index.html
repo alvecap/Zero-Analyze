@@ -132,27 +132,39 @@
             font-weight: 600;
             text-align: center;
             margin: 15px 0;
-            box-shadow: var(--box-shadow);
+            box-shadow: 0 8px 15px rgba(99, 102, 241, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(99, 102, 241, 0.3);
         }
 
         .btn:active {
-            transform: translateY(2px);
+            transform: translateY(1px);
+            box-shadow: 0 5px 10px rgba(99, 102, 241, 0.2);
         }
 
         .btn-outline {
             background-color: transparent;
-            border: 1px solid var(--primary);
+            border: 2px solid var(--primary);
             color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(99, 102, 241, 0.05);
         }
 
         .form-nav {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
+            gap: 15px;
             margin-top: 20px;
         }
 
         .form-nav .btn {
-            width: 48%;
+            width: 45%;
         }
 
         input {
@@ -163,12 +175,14 @@
             font-size: 16px;
             margin-bottom: 12px;
             transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
         input:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
             outline: none;
+            transform: translateY(-2px);
         }
 
         /* COMPOSANTS */
@@ -180,6 +194,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             display: inline-block;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         
         .logo-container {
@@ -189,6 +204,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            filter: drop-shadow(0 5px 15px rgba(99, 102, 241, 0.3));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         .tagline {
@@ -203,22 +225,32 @@
             border-radius: var(--border-radius);
             padding: 20px;
             margin-bottom: 16px;
-            box-shadow: var(--box-shadow);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            transform: translateY(0);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
         }
 
         .progress {
-            height: 6px;
+            height: 8px;
             background-color: rgba(99, 102, 241, 0.2);
-            border-radius: 3px;
-            margin-bottom: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
             overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .progress-bar {
             height: 100%;
-            background-color: var(--primary);
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 4px;
             width: 0%;
-            transition: width 0.3s ease;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 5px rgba(99, 102, 241, 0.5);
         }
 
         .steps {
@@ -228,14 +260,17 @@
         }
 
         .step {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             background-color: rgba(99, 102, 241, 0.2);
+            transition: all 0.3s ease;
         }
 
         .step.active {
             background-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+            transform: scale(1.2);
         }
 
         .score-box {
@@ -245,36 +280,50 @@
         }
 
         .score {
-            background-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
             color: white;
-            padding: 15px 20px;
+            padding: 20px 25px;
             border-radius: var(--border-radius);
-            font-size: 24px;
+            font-size: 28px;
             font-weight: bold;
             min-width: 100px;
             text-align: center;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .score:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4);
         }
         
         .confidence-badge {
             display: inline-block;
-            padding: 5px 10px;
+            padding: 5px 12px;
             border-radius: 20px;
             font-weight: bold;
             color: white;
-            margin-top: 10px;
+            margin-top: 15px;
             font-size: 14px;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .confidence-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
         }
         
         .confidence-high {
-            background-color: var(--confidence-high);
+            background: linear-gradient(135deg, var(--confidence-high), #0d9488);
         }
         
         .confidence-medium {
-            background-color: var(--confidence-medium);
+            background: linear-gradient(135deg, var(--confidence-medium), #d97706);
         }
         
         .confidence-low {
-            background-color: var(--confidence-low);
+            background: linear-gradient(135deg, var(--confidence-low), #dc2626);
         }
         
         .argument-list {
@@ -287,12 +336,22 @@
             display: flex;
             align-items: flex-start;
             margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .argument-item:hover {
+            transform: translateX(5px);
         }
         
         .argument-icon {
             font-size: 24px;
             margin-right: 10px;
             flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .argument-item:hover .argument-icon {
+            transform: scale(1.2);
         }
         
         .argument-text {
@@ -302,17 +361,46 @@
 
         /* ANIMATIONS */
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(99, 102, 241, 0.2);
-            border-radius: 50%;
-            border-top-color: var(--primary);
+            width: 60px;
+            height: 60px;
             margin: 30px auto;
-            animation: spin 1s linear infinite;
+            position: relative;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .spinner:before, .spinner:after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: var(--primary);
+            opacity: 0.6;
+            animation: sk-bounce 2.0s infinite ease-in-out;
+        }
+
+        .spinner:after {
+            background-color: var(--secondary);
+            animation-delay: -1.0s;
+        }
+
+        @keyframes sk-bounce {
+            0%, 100% { transform: scale(0.0); }
+            50% { transform: scale(1.0); }
+        }
+
+        .loading-text {
+            text-align: center;
+            margin: 15px 0;
+            font-weight: 500;
+            font-size: 16px;
+            color: var(--primary);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
         }
 
         /* UTILITAIRES */
@@ -328,26 +416,40 @@
             color: var(--error);
             font-size: 14px;
             margin-top: 5px;
+            font-weight: 500;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
 
         .input-error {
             border-color: var(--error) !important;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
         }
         
         .question-label {
             font-weight: 600;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             display: block;
         }
         
         .question-hint {
             color: var(--text-light);
             font-size: 14px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         
         .question-group {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .question-group:hover {
+            transform: translateY(-3px);
         }
     </style>
 </head>
@@ -366,7 +468,7 @@
             </div>
             <div class="logo">ZERO ANALYZE</div>
             <p class="tagline">Bienvenue dans ZERO ANALYZE. Ici, aucune analyse, aucun doute. Juste les cotes. Juste les chiffres.</p>
-            <button id="startBtn" class="btn">Commencer</button>
+            <button id="start-btn" class="btn">Commencer</button>
             
             <div class="argument-list">
                 <div class="argument-item">
@@ -391,18 +493,18 @@
         <!-- QUESTIONNAIRE -->
         <section id="questionnaire" class="page">
             <div class="progress">
-                <div id="progressBar" class="progress-bar"></div>
+                <div id="progress-bar" class="progress-bar"></div>
             </div>
             
-            <div id="stepIndicators" class="steps"></div>
+            <div id="step-indicators" class="steps"></div>
             
-            <h2 id="stepTitle">Cotes 1N2</h2>
+            <h2 id="step-title">Cotes 1N2</h2>
             
-            <div id="questionsContainer" class="card"></div>
+            <div id="questions-container" class="card"></div>
             
             <div class="form-nav">
-                <button id="prevBtn" class="btn btn-outline">Précédent</button>
-                <button id="nextBtn" class="btn">Suivant</button>
+                <button id="prev-btn" class="btn btn-outline">Précédent</button>
+                <button id="next-btn" class="btn">Suivant</button>
             </div>
         </section>
 
@@ -412,46 +514,48 @@
             
             <div id="loading" class="hidden">
                 <div class="spinner"></div>
-                <p class="centered">Analyse des cotes en cours...</p>
+                <p class="loading-text">Analyse des cotes en cours...</p>
+                <p class="loading-text">Traitement des probabilités...</p>
+                <p class="loading-text">Lecture entre les lignes...</p>
             </div>
             
-            <div id="predictionResults" class="hidden">
+            <div id="prediction-results" class="hidden">
                 <div class="card">
                     <h3>Scores exacts possibles</h3>
                     <div class="score-box">
-                        <div id="score1" class="score">0-0</div>
-                        <div id="score2" class="score">1-1</div>
+                        <div id="score-1" class="score">0-0</div>
+                        <div id="score-2" class="score">1-1</div>
                     </div>
                     <div class="centered">
-                        <span id="scoreConfidence" class="confidence-badge confidence-high">Confiance 98%</span>
+                        <span id="score-confidence" class="confidence-badge confidence-high">Confiance 98%</span>
                     </div>
                 </div>
                 
                 <div class="card">
                     <h3>Résultat du match</h3>
-                    <p id="matchResult" class="centered">Match nul</p>
+                    <p id="match-result" class="centered">Match nul</p>
                     <div class="centered">
-                        <span id="resultConfidence" class="confidence-badge confidence-high">Confiance 95%</span>
+                        <span id="result-confidence" class="confidence-badge confidence-high">Confiance 95%</span>
                     </div>
                 </div>
                 
                 <div class="card">
                     <h3>Nombre de buts</h3>
-                    <p id="goalsPrediction" class="centered">Moins de 3,5 buts</p>
+                    <p id="goals-prediction" class="centered">Moins de 3,5 buts</p>
                     <div class="centered">
-                        <span id="goalsConfidence" class="confidence-badge confidence-high">Confiance 97%</span>
+                        <span id="goals-confidence" class="confidence-badge confidence-high">Confiance 97%</span>
                     </div>
                 </div>
                 
-                <button id="newPredictionBtn" class="btn">Nouvelle prédiction</button>
-                <button id="homeBtn" class="btn btn-outline">Retour à l'accueil</button>
+                <button id="new-prediction-btn" class="btn">Nouvelle prédiction</button>
+                <button id="home-btn" class="btn btn-outline">Retour à l'accueil</button>
             </div>
         </section>
 
         <!-- PROFIL -->
         <section id="profile" class="page">
             <h2>Profil</h2>
-            <div id="profileContent" class="card">
+            <div id="profile-content" class="card">
                 <p class="centered">Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
             </div>
         </section>
@@ -459,7 +563,7 @@
         <!-- SERVICES -->
         <section id="services" class="page">
             <h2>Mes Services</h2>
-            <div id="servicesList">
+            <div id="services-list">
                 <!-- Carte de service 1 -->
                 <div class="card">
                     <h3>Création de bots Telegram IA</h3>
@@ -494,15 +598,15 @@
 
         <!-- NAVIGATION -->
         <nav class="bottom-nav">
-            <div id="navHome" class="nav-item active">
+            <div id="nav-home" class="nav-item active">
                 <div class="nav-icon">🏠</div>
                 <span>Accueil</span>
             </div>
-            <div id="navServices" class="nav-item">
+            <div id="nav-services" class="nav-item">
                 <div class="nav-icon">🛠️</div>
                 <span>Services</span>
             </div>
-            <div id="navProfile" class="nav-item">
+            <div id="nav-profile" class="nav-item">
                 <div class="nav-icon">👤</div>
                 <span>Profil</span>
             </div>
@@ -522,9 +626,6 @@ document.addEventListener('DOMContentLoaded', function() {
         tg.BackButton.onClick(function() {
             goToHomePage();
         });
-</script>
-</body>
-</html>
     }
     
     // ================== VARIABLES GLOBALES ==================
@@ -589,18 +690,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ================== ÉLÉMENTS DU DOM ==================
     const pages = document.querySelectorAll('.page');
-    const startBtn = document.getElementById('startBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const homeBtn = document.getElementById('homeBtn');
-    const newPredictionBtn = document.getElementById('newPredictionBtn');
-    const progressBar = document.getElementById('progressBar');
-    const stepTitle = document.getElementById('stepTitle');
-    const stepIndicators = document.getElementById('stepIndicators');
-    const questionsContainer = document.getElementById('questionsContainer');
-    const navHome = document.getElementById('navHome');
-    const navServices = document.getElementById('navServices');
-    const navProfile = document.getElementById('navProfile');
+    const startBtn = document.getElementById('start-btn');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const homeBtn = document.getElementById('home-btn');
+    const newPredictionBtn = document.getElementById('new-prediction-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const stepTitle = document.getElementById('step-title');
+    const stepIndicators = document.getElementById('step-indicators');
+    const questionsContainer = document.getElementById('questions-container');
+    const navHome = document.getElementById('nav-home');
+    const navServices = document.getElementById('nav-services');
+    const navProfile = document.getElementById('nav-profile');
     
     // ================== NAVIGATION ==================
     function navigateTo(pageId) {
@@ -631,92 +732,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
-    // ================== PROFIL UTILISATEUR ==================
-    function loadUserProfile() {
-        const profileContent = document.getElementById('profileContent');
-        
-        if (tg && tg.initDataUnsafe?.user) {
-            const user = tg.initDataUnsafe.user;
-            
-            profileContent.innerHTML = `
-                <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                    <div style="width: 70px; height: 70px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin-right: 15px;">
-                        ${user.first_name ? user.first_name.charAt(0) : '?'}${user.last_name ? user.last_name.charAt(0) : ''}
-                    </div>
-                    <div>
-                        <h3 style="margin: 0 0 5px 0;">${user.first_name || ''} ${user.last_name || ''}</h3>
-                        <p style="margin: 0; color: var(--text-light);">@${user.username || 'inconnu'}</p>
-                    </div>
-                </div>
-                <p>Bienvenue dans ZERO ANALYZE, votre application de prédiction sportive basée uniquement sur les cotes.</p>
-                <p>Vos prédictions sont générées automatiquement grâce à nos algorithmes avancés d'analyse des cotes.</p>
-                <p>Aucune analyse statistique, aucune étude de forme - uniquement la lecture des cotes proposées par les bookmakers.</p>
-            `;
-        } else {
-            profileContent.innerHTML = `
-                <p class="centered">Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
-            `;
-        }
-    }
-    
-    // ================== FONCTIONS UTILITAIRES ==================
-    function goToHomePage() {
-        navigateTo('home');
-    }
-    
-    // ================== ÉVÉNEMENTS ==================
-    // Bouton Commencer
-    startBtn.addEventListener('click', function() {
-        resetQuestionnaire();
-        navigateTo('questionnaire');
-    });
-    
-    // Navigation du questionnaire
-    prevBtn.addEventListener('click', prevStep);
-    nextBtn.addEventListener('click', nextStep);
-    
-    // Boutons des résultats
-    homeBtn.addEventListener('click', goToHomePage);
-    newPredictionBtn.addEventListener('click', function() {
-        resetQuestionnaire();
-        navigateTo('questionnaire');
-    });
-    
-    // Navigation principale
-    navHome.addEventListener('click', function() {
-        navigateTo('home');
-    });
-    
-    navServices.addEventListener('click', function() {
-        navigateTo('services');
-    });
-    
-    navProfile.addEventListener('click', function() {
-        navigateTo('profile');
-        loadUserProfile();
-    });
-    
-    // Boutons des services
-    document.querySelectorAll('.service-info-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            alert('Aperçu du service: ' + this.dataset.service);
-        });
-    });
-    
-    document.querySelectorAll('.service-contact-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            alert('Contact pour le service: ' + this.dataset.service);
-        });
-    });
-    
-    // ================== INITIALISATION ==================
-    // Générer les indicateurs d'étapes
-    generateStepIndicators();
-    
-    // Charger le profil utilisateur
-    loadUserProfile();
-});
 
     // ================== FONCTIONS DU QUESTIONNAIRE ==================
     function resetQuestionnaire() {
@@ -877,7 +892,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Afficher le chargement
         document.getElementById('loading').classList.remove('hidden');
-        document.getElementById('predictionResults').classList.add('hidden');
+        document.getElementById('prediction-results').classList.add('hidden');
         
         // Attendre pour simuler le traitement
         setTimeout(() => {
@@ -885,24 +900,42 @@ document.addEventListener('DOMContentLoaded', function() {
             const prediction = generatePrediction();
             
             // Afficher les résultats
-            document.getElementById('score1').textContent = prediction.scoreExact1;
-            document.getElementById('score2').textContent = prediction.scoreExact2;
-            document.getElementById('matchResult').textContent = prediction.matchResult;
-            document.getElementById('goalsPrediction').textContent = prediction.goalsPrediction;
+            document.getElementById('score-1').textContent = prediction.scoreExact1;
+            document.getElementById('score-2').textContent = prediction.scoreExact2;
+            document.getElementById('match-result').textContent = prediction.matchResult;
+            document.getElementById('goals-prediction').textContent = prediction.goalsPrediction;
             
             // Générer des pourcentages de confiance aléatoires entre 95% et 99%
             const scoreConfidence = Math.floor(Math.random() * 5) + 95;
             const resultConfidence = Math.floor(Math.random() * 5) + 95;
             const goalsConfidence = Math.floor(Math.random() * 5) + 95;
             
-            document.getElementById('scoreConfidence').textContent = `Confiance ${scoreConfidence}%`;
-            document.getElementById('resultConfidence').textContent = `Confiance ${resultConfidence}%`;
-            document.getElementById('goalsConfidence').textContent = `Confiance ${goalsConfidence}%`;
+            document.getElementById('score-confidence').textContent = `Confiance ${scoreConfidence}%`;
+            document.getElementById('result-confidence').textContent = `Confiance ${resultConfidence}%`;
+            document.getElementById('goals-confidence').textContent = `Confiance ${goalsConfidence}%`;
+            
+            // Définir la classe de confiance en fonction du pourcentage
+            setConfidenceClass('score-confidence', scoreConfidence);
+            setConfidenceClass('result-confidence', resultConfidence);
+            setConfidenceClass('goals-confidence', goalsConfidence);
             
             // Masquer le chargement et afficher les résultats
             document.getElementById('loading').classList.add('hidden');
-            document.getElementById('predictionResults').classList.remove('hidden');
+            document.getElementById('prediction-results').classList.remove('hidden');
         }, 3000);
+    }
+
+    function setConfidenceClass(elementId, confidence) {
+        const element = document.getElementById(elementId);
+        element.classList.remove('confidence-high', 'confidence-medium', 'confidence-low');
+        
+        if (confidence >= 98) {
+            element.classList.add('confidence-high');
+        } else if (confidence >= 96) {
+            element.classList.add('confidence-medium');
+        } else {
+            element.classList.add('confidence-low');
+        }
     }
     
     function generatePrediction() {
@@ -1039,9 +1072,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Ajuster avec le handicap
-        adjustScoresWithHandicap(homeScore1, awayScore1, homeScore2, awayScore2);
-        
         // S'assurer que les scores sont différents
         if (homeScore1 === homeScore2 && awayScore1 === awayScore2) {
             if (Math.random() > 0.5) {
@@ -1055,37 +1085,6 @@ document.addEventListener('DOMContentLoaded', function() {
             score1: `${homeScore1}-${awayScore1}`,
             score2: `${homeScore2}-${awayScore2}`
         };
-    }
-    
-    function adjustScoresWithHandicap(homeScore1, awayScore1, homeScore2, awayScore2) {
-        const homeHandicapMinus1 = userAnswers.homeHandicapMinus1;
-        const homeHandicapPlus1 = userAnswers.homeHandicapPlus1;
-        const awayHandicapMinus1 = userAnswers.awayHandicapMinus1;
-        const awayHandicapPlus1 = userAnswers.awayHandicapPlus1;
-        
-        if (homeHandicapMinus1 && homeHandicapMinus1 < 2.2) {
-            if (homeScore1 <= awayScore1) {
-                homeScore1 = awayScore1 + 1;
-            }
-        }
-        
-        if (awayHandicapMinus1 && awayHandicapMinus1 < 2.2) {
-            if (awayScore1 <= homeScore1) {
-                awayScore1 = homeScore1 + 1;
-            }
-        }
-        
-        if (homeHandicapPlus1 && homeHandicapPlus1 < 1.5) {
-            if (homeScore2 >= awayScore2) {
-                awayScore2 = homeScore2 + 1;
-            }
-        }
-        
-        if (awayHandicapPlus1 && awayHandicapPlus1 < 1.5) {
-            if (awayScore2 >= homeScore2) {
-                homeScore2 = awayScore2 + 1;
-            }
-        }
     }
     
     function determineMatchResult(favoriteAnalysis) {
@@ -1124,3 +1123,93 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             return 'Plus de 2,5 buts';
         }
+    }
+    
+    // ================== PROFIL UTILISATEUR ==================
+    function loadUserProfile() {
+        const profileContent = document.getElementById('profile-content');
+        
+        if (tg && tg.initDataUnsafe?.user) {
+            const user = tg.initDataUnsafe.user;
+            
+            profileContent.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                    <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin-right: 15px; box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);">
+                        ${user.first_name ? user.first_name.charAt(0) : '?'}${user.last_name ? user.last_name.charAt(0) : ''}
+                    </div>
+                    <div>
+                        <h3 style="margin: 0 0 5px 0;">${user.first_name || ''} ${user.last_name || ''}</h3>
+                        <p style="margin: 0; color: var(--text-light);">@${user.username || 'inconnu'}</p>
+                    </div>
+                </div>
+                <p>Bienvenue dans ZERO ANALYZE, votre application de prédiction sportive basée uniquement sur les cotes.</p>
+                <p>Vos prédictions sont générées automatiquement grâce à nos algorithmes avancés d'analyse des cotes.</p>
+                <p>Aucune analyse statistique, aucune étude de forme - uniquement la lecture des cotes proposées par les bookmakers.</p>
+            `;
+        } else {
+            profileContent.innerHTML = `
+                <p class="centered">Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
+            `;
+        }
+    }
+    
+    // ================== FONCTIONS UTILITAIRES ==================
+    function goToHomePage() {
+        navigateTo('home');
+    }
+    
+    // ================== ÉVÉNEMENTS ==================
+    // Bouton Commencer
+    startBtn.addEventListener('click', function() {
+        resetQuestionnaire();
+        navigateTo('questionnaire');
+    });
+    
+    // Navigation du questionnaire
+    prevBtn.addEventListener('click', prevStep);
+    nextBtn.addEventListener('click', nextStep);
+    
+    // Boutons des résultats
+    homeBtn.addEventListener('click', goToHomePage);
+    newPredictionBtn.addEventListener('click', function() {
+        resetQuestionnaire();
+        navigateTo('questionnaire');
+    });
+    
+    // Navigation principale
+    navHome.addEventListener('click', function() {
+        navigateTo('home');
+    });
+    
+    navServices.addEventListener('click', function() {
+        navigateTo('services');
+    });
+    
+    navProfile.addEventListener('click', function() {
+        navigateTo('profile');
+        loadUserProfile();
+    });
+    
+    // Boutons des services
+    document.querySelectorAll('.service-info-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            alert('Aperçu du service: ' + this.dataset.service);
+        });
+    });
+    
+    document.querySelectorAll('.service-contact-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            alert('Contact pour le service: ' + this.dataset.service);
+        });
+    });
+    
+    // ================== INITIALISATION ==================
+    // Générer les indicateurs d'étapes
+    generateStepIndicators();
+    
+    // Charger le profil utilisateur
+    loadUserProfile();
+});
+</script>
+</body>
+</html>
