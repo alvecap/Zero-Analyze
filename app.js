@@ -1,11 +1,21 @@
 // app.js - Logique principale pour Telegram WebApp avec intégration Firebase
-// Version simplifiée pour résoudre les problèmes de boutons
+// Version améliorée avec design moderne et corrections des problèmes de boutons
 
 // Attendre que le document soit complètement chargé
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Application initialisée");
+    console.log("Application ZERO ANALYZE initialisée");
     
-    // PARTIE 1: INITIALISATION FIREBASE
+    // ======================================================
+    // PARTIE 1: INITIALISATION DES OBJETS PRINCIPAUX
+    // ======================================================
+    
+    // Variables globales
+    let telegramApp; // Pour l'API Telegram WebApp
+    let firebaseApp, db, auth, currentUser; // Pour Firebase
+    
+    // ======================================================
+    // PARTIE 2: INITIALISATION DE FIREBASE
+    // ======================================================
     
     // Configuration de Firebase - utilise les variables d'environnement de Render
     const firebaseConfig = {
@@ -17,10 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
         appId: process.env.FIREBASE_APP_ID
     };
 
-    // Variables globales pour Firebase
-    let firebaseApp, db, auth, currentUser;
-
-    // Initialisation Firebase
+    // Initialisation de Firebase
     try {
         if (firebase) {
             firebaseApp = firebase.initializeApp(firebaseConfig);
@@ -30,14 +37,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } catch (error) {
         console.error("Erreur lors de l'initialisation de Firebase:", error);
+        showToast("Erreur", "Connexion à la base de données impossible", "❌");
     }
     
-    // PARTIE 2: TELEGRAM WEBAPP
+    // ======================================================
+    // PARTIE 3: INITIALISATION DE TELEGRAM WEBAPP
+    // ======================================================
     
-    // Variable pour Telegram WebApp
-    let telegramApp;
-    
-    // Initialisation de Telegram WebApp
     try {
         telegramApp = window.Telegram?.WebApp;
         if (telegramApp) {
@@ -61,36 +67,42 @@ document.addEventListener('DOMContentLoaded', function() {
             if (telegramApp.initDataUnsafe?.user) {
                 authenticateUser(telegramApp.initDataUnsafe.user);
             }
+            
+            console.log("Telegram WebApp initialisé avec succès");
         }
     } catch (error) {
         console.error('Telegram WebApp non disponible:', error);
+        showToast("Attention", "Certaines fonctionnalités Telegram peuvent être limitées", "⚠️");
     }
     
-    // PARTIE 3: FONCTIONS DE BASE
+    // ======================================================
+    // PARTIE 4: FONCTIONS DE NAVIGATION ET D'INTERFACE
+    // ======================================================
     
     // Fonction de navigation entre les pages
+    // Cette fonction remplace celle définie dans le HTML
     window.navigateTo = function(pageId) {
         console.log("Navigation vers:", pageId);
         
         // Masquer toutes les pages
-        var pages = document.querySelectorAll('.page');
-        for (var i = 0; i < pages.length; i++) {
-            pages[i].classList.remove('active');
-        }
+        const pages = document.querySelectorAll('.page');
+        pages.forEach(page => {
+            page.classList.remove('active');
+        });
         
         // Afficher la page demandée
-        var targetPage = document.getElementById(pageId);
+        const targetPage = document.getElementById(pageId);
         if (targetPage) {
             targetPage.classList.add('active');
             
             // Mettre à jour les boutons de navigation
-            var navButtons = document.querySelectorAll('.nav-item');
-            for (var j = 0; j < navButtons.length; j++) {
-                navButtons[j].classList.remove('active');
-                if (navButtons[j].id === 'nav-' + pageId) {
-                    navButtons[j].classList.add('active');
+            const navButtons = document.querySelectorAll('.nav-item');
+            navButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.id === 'nav-' + pageId) {
+                    btn.classList.add('active');
                 }
-            }
+            });
             
             // Gérer le bouton retour de Telegram
             if (telegramApp && telegramApp.BackButton) {
@@ -104,7 +116,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Actions spécifiques selon la page
             if (pageId === 'home') {
                 if (window.initLogoAnimationEffect) {
-                    window.initLogoAnimationEffect(document.getElementById('logo-animation'));
+                    const logoContainer = document.getElementById('logo-animation');
+                    if (logoContainer) {
+                        window.initLogoAnimationEffect(logoContainer);
+                    }
                 }
             } else if (pageId === 'profile') {
                 loadUserProfile();
@@ -114,17 +129,71 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Faire défiler vers le haut
             window.scrollTo(0, 0);
+        } else {
+            console.error("Page non trouvée:", pageId);
+            showToast("Erreur", "Page introuvable", "❌");
         }
     };
     
-    // Démarrer le questionnaire
+    // Fonction pour afficher les messages Toast
+    function showToast(title, message, icon) {
+        // Supprimer le toast existant s'il y en a un
+        const existingToast = document.querySelector('.toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+        
+        // Créer un nouveau toast
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `
+            <div class="toast-icon">${icon || 'ℹ️'}</div>
+            <div class="toast-content">
+                <div class="toast-title">${title}</div>
+                <div class="toast-message">${message}</div>
+            </div>
+            <div class="toast-close" onclick="this.parentNode.remove()">×</div>
+        `;
+        
+        // Ajouter au DOM
+        document.body.appendChild(toast);
+        
+        // Supprimer automatiquement après 4 secondes
+        setTimeout(() => {
+            if (toast && toast.parentNode) {
+                toast.classList.add('toast-hide');
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 4000);
+    }
+    
+    // Démarrer le questionnaire avec animation
     window.startQuestionnaire = function() {
         console.log("Démarrage du questionnaire");
-        if (window.resetQuestionnaire) {
-            window.resetQuestionnaire();
+        
+        // Ajouter une classe d'animation au bouton
+        const startButton = document.getElementById('start-btn');
+        if (startButton) {
+            startButton.classList.add('btn-loading');
+            setTimeout(() => {
+                startButton.classList.remove('btn-loading');
+                
+                if (window.resetQuestionnaire) {
+                    window.resetQuestionnaire();
+                }
+                window.navigateTo('questionnaire');
+            }, 800); // Délai d'animation
+        } else {
+            if (window.resetQuestionnaire) {
+                window.resetQuestionnaire();
+            }
+            window.navigateTo('questionnaire');
         }
-        window.navigateTo('questionnaire');
     };
+    
+    // ======================================================
+    // PARTIE 5: AUTHENTIFICATION ET GESTION DES UTILISATEURS
+    // ======================================================
     
     // Authentification de l'utilisateur via Telegram
     async function authenticateUser(telegramUser) {
@@ -144,9 +213,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // Vérifier les limites d'utilisation
             checkUserLimits();
             
+            // Afficher un toast de bienvenue
+            showToast("Bienvenue", `Heureux de vous revoir, ${currentUser.firstName || 'utilisateur'} !`, "👋");
+            
             return currentUser;
         } catch (error) {
             console.error("Erreur d'authentification:", error);
+            showToast("Erreur", "Problème d'authentification", "❌");
             return null;
         }
     }
@@ -188,6 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 telegramId: telegramId,
                 username: telegramUser.username || '',
                 firstName: telegramUser.first_name || '',
+                lastName: telegramUser.last_name || '',
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 dailyLimit: 6,  // Limite modifiée à 6 comme demandé
                 usageCount: 0,
@@ -199,6 +273,10 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             
             const docRef = await usersRef.add(newUser);
+            
+            // Afficher un toast de bienvenue pour les nouveaux utilisateurs
+            showToast("Bienvenue", "Bienvenue sur ZERO ANALYZE !", "🎉");
+            
             return {
                 id: docRef.id,
                 ...newUser
@@ -231,6 +309,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Afficher les infos de limite
             displayLimitInfo(limitInfo);
+            
+            // Alerter si peu de prédictions restantes
+            if (limitInfo.remaining === 1 && !limitInfo.isPremium) {
+                showToast("Attention", "Il ne vous reste plus qu'une prédiction aujourd'hui", "⚠️");
+            } else if (limitInfo.remaining === 0 && !limitInfo.isPremium) {
+                showToast("Limite atteinte", "Vous avez atteint votre limite quotidienne", "🛑");
+            }
         } catch (error) {
             console.error("Erreur lors de la vérification des limites:", error);
         }
@@ -259,6 +344,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // ======================================================
+    // PARTIE 6: GESTION DES PROFILS ET SERVICES
+    // ======================================================
+    
     // Chargement du profil utilisateur
     function loadUserProfile() {
         const profileContent = document.getElementById('profile-content');
@@ -282,6 +371,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${currentUser.isPremium ? '<div class="premium-status">Statut: <span class="premium-badge">Premium</span></div>' : ''}
                 </div>
             `;
+            
+            // Ajouter les statistiques si possible
+            loadUserStats();
         } else if (telegramApp && telegramApp.initDataUnsafe?.user) {
             // Utilisateur Telegram mais pas encore dans Firebase
             const user = telegramApp.initDataUnsafe.user;
@@ -303,8 +395,120 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // Message d'erreur
             profileContent.innerHTML = `
-                <div class="error-message centered">
-                    <p>Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
+                <div class="card">
+                    <div class="error-icon">⚠️</div>
+                    <h3>Authentification requise</h3>
+                    <p class="error-subtitle">Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Chargement des statistiques de l'utilisateur
+    async function loadUserStats() {
+        if (!db || !currentUser || !currentUser.id) return;
+        
+        const statsContainer = document.getElementById('prediction-stats');
+        if (!statsContainer) return;
+        
+        try {
+            // Récupérer l'utilisateur
+            const userDoc = await db.collection('users').doc(currentUser.id).get();
+            if (!userDoc.exists) {
+                return;
+            }
+            
+            const userData = userDoc.data();
+            
+            // Calculer les informations de limite
+            const limitInfo = {
+                dailyLimit: userData.dailyLimit || 6,
+                usageCount: userData.usageCount || 0,
+                remaining: (userData.dailyLimit || 6) - (userData.usageCount || 0),
+                isPremium: userData.isPremium || false,
+                totalPredictions: userData.totalPredictionsCount || 0
+            };
+            
+            // Récupérer l'historique des prédictions
+            const predictionsQuery = db.collection('predictions')
+                .where('userId', '==', currentUser.id)
+                .orderBy('timestamp', 'desc')
+                .limit(5);
+            
+            const predictionsSnapshot = await predictionsQuery.get();
+            const predictions = [];
+            
+            predictionsSnapshot.forEach(doc => {
+                predictions.push(doc.data());
+            });
+            
+            // Créer le HTML des statistiques
+            let statsHTML = `
+                <div class="stats-card">
+                    <h4>Vos prédictions</h4>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">${limitInfo.remaining}</div>
+                            <div class="stat-label">Restantes aujourd'hui</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${limitInfo.totalPredictions}</div>
+                            <div class="stat-label">Prédictions totales</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Ajouter l'historique s'il y a des prédictions
+            if (predictions.length > 0) {
+                statsHTML += `
+                    <div class="history-card">
+                        <h4>Historique récent</h4>
+                        <ul class="prediction-history">
+                `;
+                
+                predictions.forEach(prediction => {
+                    if (prediction.timestamp && prediction.details) {
+                        const date = new Date(prediction.timestamp.seconds * 1000);
+                        const formattedDate = date.toLocaleDateString('fr-FR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        
+                        statsHTML += `
+                            <li class="history-item">
+                                <div class="history-date">${formattedDate}</div>
+                                <div class="history-details">
+                                    <div class="history-score">${prediction.details.scoreExact1 || '0-0'} / ${prediction.details.scoreExact2 || '0-0'}</div>
+                                    <div class="history-result">${prediction.details.matchResult || 'Match nul'}</div>
+                                </div>
+                            </li>
+                        `;
+                    }
+                });
+                
+                statsHTML += `
+                        </ul>
+                    </div>
+                `;
+            } else {
+                statsHTML += `
+                    <div class="history-card">
+                        <h4>Historique récent</h4>
+                        <p class="centered">Aucune prédiction effectuée pour le moment.</p>
+                    </div>
+                `;
+            }
+            
+            // Mettre à jour le conteneur
+            statsContainer.innerHTML = statsHTML;
+        } catch (error) {
+            console.error("Erreur lors du chargement des statistiques:", error);
+            statsContainer.innerHTML = `
+                <div class="card">
+                    <p class="error-message">Impossible de charger vos statistiques. Veuillez réessayer.</p>
                 </div>
             `;
         }
@@ -312,14 +516,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Chargement des services
     function loadServices() {
-        const servicesListContainer = document.getElementById('services-list');
-        if (!servicesListContainer) return;
-        
-        // Les services sont déjà chargés dans le HTML
-        console.log("Services chargés");
+        // Les services sont déjà définis dans le HTML, rien à faire ici
+        console.log("Page des services chargée");
     }
     
-    // PARTIE 4: INTÉGRATION AVEC LES RÉSULTATS
+    // ======================================================
+    // PARTIE 7: GESTION DES RÉSULTATS ET PRÉDICTIONS
+    // ======================================================
     
     // Afficher les résultats de prédiction
     window.showResults = function(results) {
@@ -333,28 +536,57 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loadingElement) loadingElement.classList.remove('hidden');
         if (predictionResults) predictionResults.classList.add('hidden');
         
-        // Simuler le traitement
-        setTimeout(function() {
-            // Cacher l'animation et afficher les résultats
-            if (loadingElement) loadingElement.classList.add('hidden');
-            if (predictionResults) predictionResults.classList.remove('hidden');
-            
-            // Remplir les résultats
-            const score1Element = document.getElementById('score-1');
-            const score2Element = document.getElementById('score-2');
-            const matchResultElement = document.getElementById('match-result');
-            const goalsPredictionElement = document.getElementById('goals-prediction');
-            
-            if (score1Element) score1Element.textContent = results.scoreExact1;
-            if (score2Element) score2Element.textContent = results.scoreExact2;
-            if (matchResultElement) matchResultElement.textContent = results.matchResult;
-            if (goalsPredictionElement) goalsPredictionElement.textContent = results.goalsPrediction;
-            
-            // Enregistrer l'utilisation si l'utilisateur est connecté
-            if (db && currentUser && currentUser.id) {
-                incrementUsageCount(currentUser.id, results);
+        // Simuler le traitement avec plusieurs étapes
+        setTimeout(() => {
+            const loadingTexts = document.querySelectorAll('.loading-text');
+            if (loadingTexts.length > 0) {
+                loadingTexts[0].style.display = 'none';
+                loadingTexts[1].style.fontWeight = 'bold';
             }
-        }, 3000); // 3 secondes d'animation
+            
+            setTimeout(() => {
+                if (loadingTexts.length > 1) {
+                    loadingTexts[1].style.display = 'none';
+                    if (loadingTexts.length > 2) {
+                        loadingTexts[2].style.fontWeight = 'bold';
+                    }
+                }
+                
+                setTimeout(() => {
+                    // Cacher l'animation et afficher les résultats
+                    if (loadingElement) loadingElement.classList.add('hidden');
+                    if (predictionResults) {
+                        predictionResults.style.opacity = 0;
+                        predictionResults.classList.remove('hidden');
+                        
+                        // Animation de fade-in
+                        setTimeout(() => {
+                            predictionResults.style.transition = 'opacity 0.5s ease';
+                            predictionResults.style.opacity = 1;
+                        }, 100);
+                    }
+                    
+                    // Remplir les résultats
+                    const score1Element = document.getElementById('score-1');
+                    const score2Element = document.getElementById('score-2');
+                    const matchResultElement = document.getElementById('match-result');
+                    const goalsPredictionElement = document.getElementById('goals-prediction');
+                    
+                    if (score1Element) score1Element.textContent = results.scoreExact1;
+                    if (score2Element) score2Element.textContent = results.scoreExact2;
+                    if (matchResultElement) matchResultElement.textContent = results.matchResult;
+                    if (goalsPredictionElement) goalsPredictionElement.textContent = results.goalsPrediction;
+                    
+                    // Enregistrer l'utilisation si l'utilisateur est connecté
+                    if (db && currentUser && currentUser.id) {
+                        incrementUsageCount(currentUser.id, results);
+                    }
+                    
+                    // Afficher un toast
+                    showToast("Prédiction générée", "Votre prédiction est prête !", "🎯");
+                }, 1000);
+            }, 1000);
+        }, 1000);
     };
     
     // Incrémenter le compteur d'utilisation dans Firebase
@@ -398,12 +630,13 @@ document.addEventListener('DOMContentLoaded', function() {
             checkUserLimits();
         } catch (error) {
             console.error("Erreur lors de l'incrémentation du compteur:", error);
+            showToast("Erreur", "Problème lors de l'enregistrement de la prédiction", "❌");
         }
     }
     
     // Afficher un message lorsque la limite est atteinte
     function showLimitReachedMessage() {
-        // Créer le modal de limite atteinte
+        // Créer le modal de limite atteinte avec design amélioré
         const modal = document.createElement('div');
         modal.className = 'limit-modal';
         modal.innerHTML = `
@@ -411,7 +644,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3>Limite atteinte</h3>
                 <p>Vous avez atteint votre limite quotidienne de prédictions gratuites.</p>
                 <p>Revenez demain ou passez à la version premium pour des prédictions illimitées.</p>
-                <button id="close-limit-modal" class="primary-btn">Fermer</button>
+                <button id="close-limit-modal" class="btn">Fermer</button>
             </div>
         `;
         
@@ -421,99 +654,256 @@ document.addEventListener('DOMContentLoaded', function() {
         const closeButton = document.getElementById('close-limit-modal');
         if (closeButton) {
             closeButton.onclick = function() {
-                document.body.removeChild(modal);
+                modal.style.opacity = 0;
+                setTimeout(() => {
+                    document.body.removeChild(modal);
+                }, 300);
             };
         }
+        
+        // Afficher un toast
+        showToast("Limite atteinte", "Revenir demain ou passer en premium", "🔒");
     }
     
-    // PARTIE 5: FONCTIONS POUR LES SERVICES
+    // ======================================================
+    // PARTIE 8: GESTION DES SERVICES
+    // ======================================================
+    
+    // Liste des services avec descriptions détaillées
+    const services = [
+        {
+            id: 'telegram-bots',
+            title: 'Création de bots Telegram IA',
+            shortDescription: 'Bot avec prédictions automatisées',
+            fullDescription: `Nous développons des bots Telegram intelligents avec une intégration complète de l'IA. 
+                            Nos bots peuvent offrir des prédictions sportives, des analyses de données, et une interaction 
+                            naturelle avec vos utilisateurs. Ils sont parfaitement adaptés pour les plateformes de paris, 
+                            les médias sportifs ou les communautés de fans.`,
+            features: [
+                "Prédictions automatisées similaires à ZERO ANALYZE",
+                "Intégration avec les API de cotes en temps réel",
+                "Notifications personnalisées",
+                "Système de paiement intégré",
+                "Tableaux de bord d'analyse"
+            ],
+            price: "À partir de 999€"
+        },
+        {
+            id: 'webapps',
+            title: 'Développement de WebApps IA',
+            shortDescription: 'WebApp comme Zero Analyze',
+            fullDescription: `Nous créons des WebApps Telegram modernes et réactives, parfaitement intégrées à l'écosystème Telegram.
+                            Ces applications offrent une expérience utilisateur fluide et engageante, avec des fonctionnalités 
+                            avancées d'analyse de données et de prédiction, similaires à ZERO ANALYZE.`,
+            features: [
+                "Interface utilisateur personnalisée et moderne",
+                "Intégration complète avec Telegram",
+                "Algorithmes de prédiction avancés",
+                "Tableau de bord administrateur",
+                "Système de gestion des utilisateurs",
+                "Analyses en temps réel"
+            ],
+            price: "À partir de 1499€"
+        },
+        {
+            id: 'youtube',
+            title: 'Création de chaînes YouTube',
+            shortDescription: 'Branding, scripts, monétisation',
+            fullDescription: `Nous vous accompagnons dans la création et le développement de votre chaîne YouTube, 
+                            de la conception de l'identité visuelle à la stratégie de contenu et de monétisation. 
+                            Notre approche combine créativité et analyse de données pour maximiser votre audience 
+                            et votre engagement.`,
+            features: [
+                "Création d'identité visuelle et branding",
+                "Rédaction de scripts et scénarios",
+                "Optimisation SEO pour YouTube",
+                "Stratégie de monétisation",
+                "Analyse de performance et conseils d'amélioration",
+                "Aide à la production vidéo"
+            ],
+            price: "À partir de 799€"
+        }
+    ];
     
     // Afficher les détails d'un service
     window.showServiceDetails = function(serviceId) {
         console.log("Affichage des détails du service:", serviceId);
         
-        // Informations des services
-        const servicesList = [
-            {
-                id: 'telegram-bots',
-                title: 'Création de bots Telegram IA',
-                description: 'Développement de bots avec prédictions automatisées et interactions intelligentes.'
-            },
-            {
-                id: 'webapps',
-                title: 'Développement de WebApps IA',
-                description: 'Applications web comme Zero Analyze, avec intelligence artificielle intégrée.'
-            },
-            {
-                id: 'youtube',
-                title: 'Création de chaînes YouTube',
-                description: 'Stratégie de contenu, branding, scripts, montage et monétisation.'
-            }
-        ];
-        
-        // Trouver le service demandé
-        const service = servicesList.find(s => s.id === serviceId);
-        if (service) {
-            alert(`Service: ${service.title}\n\nDescription: ${service.description}`);
-        } else {
-            alert("Service non trouvé");
+        // Trouver le service correspondant
+        const service = services.find(s => s.id === serviceId);
+        if (!service) {
+            showToast("Erreur", "Service non trouvé", "❌");
+            return;
         }
+        
+        // Créer le modal avec un design amélioré
+        const modal = document.createElement('div');
+        modal.className = 'limit-modal';
+        modal.innerHTML = `
+            <div class="limit-modal-content">
+                <h3>${service.title}</h3>
+                <p>${service.fullDescription}</p>
+                
+                <div style="margin-top: 20px; text-align: left;">
+                    <h4 style="margin-bottom: 10px; color: var(--primary);">Fonctionnalités</h4>
+                    <ul style="padding-left: 20px; margin-bottom: 15px;">
+                        ${service.features.map(feature => `<li style="margin-bottom: 8px;">${feature}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <p style="font-weight: 600; margin-top: 15px; color: var(--primary);">${service.price}</p>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                    <button id="contact-service-btn" class="btn" style="width: 48%;">Nous contacter</button>
+                    <button id="close-modal-btn" class="btn btn-outline" style="width: 48%;">Fermer</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Gérer les événements des boutons
+        document.getElementById('contact-service-btn').onclick = function() {
+            document.body.removeChild(modal);
+            showContactForm(serviceId);
+        };
+        
+        document.getElementById('close-modal-btn').onclick = function() {
+            modal.style.opacity = 0;
+            setTimeout(() => {
+                document.body.removeChild(modal);
+            }, 300);
+        };
     };
     
     // Afficher le formulaire de contact pour un service
     window.showContactForm = function(serviceId) {
         console.log("Affichage du formulaire de contact pour:", serviceId);
         
-        // Informations des services (même que ci-dessus)
-        const servicesList = [
-            {
-                id: 'telegram-bots',
-                title: 'Création de bots Telegram IA',
-                description: 'Développement de bots avec prédictions automatisées et interactions intelligentes.'
-            },
-            {
-                id: 'webapps',
-                title: 'Développement de WebApps IA',
-                description: 'Applications web comme Zero Analyze, avec intelligence artificielle intégrée.'
-            },
-            {
-                id: 'youtube',
-                title: 'Création de chaînes YouTube',
-                description: 'Stratégie de contenu, branding, scripts, montage et monétisation.'
-            }
-        ];
-        
-        // Trouver le service demandé
-        const service = servicesList.find(s => s.id === serviceId);
-        if (service) {
-            alert(`Contact pour le service: ${service.title}\n\nVeuillez nous contacter via Telegram pour plus d'informations.`);
-            
-            // Si l'utilisateur est authentifié, enregistrer l'intérêt
-            if (currentUser && currentUser.id && db) {
-                // Enregistrer l'intérêt dans Firebase
-                db.collection('service_interests').add({
-                    userId: currentUser.id,
-                    serviceId: serviceId,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                }).catch(error => {
-                    console.error("Erreur lors de l'enregistrement de l'intérêt:", error);
-                });
-            }
-        } else {
-            alert("Service non trouvé");
+        // Trouver le service correspondant
+        const service = services.find(s => s.id === serviceId);
+        if (!service) {
+            showToast("Erreur", "Service non trouvé", "❌");
+            return;
         }
+        
+        // Créer le modal avec un formulaire de contact
+        const modal = document.createElement('div');
+        modal.className = 'limit-modal';
+        modal.innerHTML = `
+            <div class="limit-modal-content">
+                <h3>Contact pour ${service.title}</h3>
+                <p>Complétez le formulaire ci-dessous pour en savoir plus sur nos services.</p>
+                
+                <div class="contact-form" style="margin-top: 20px;">
+                    <button id="contact-telegram-btn" class="btn" style="margin-bottom: 10px;">
+                        Contacter via Telegram
+                    </button>
+                    
+                    <p style="text-align: center; margin: 15px 0; color: var(--text-light);">ou</p>
+                    
+                    <div class="form-group">
+                        <label for="contact-email">Email</label>
+                        <input type="email" id="contact-email" placeholder="Votre email">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contact-message">Message</label>
+                        <textarea id="contact-message" rows="4" placeholder="Votre message" style="width: 100%; padding: 12px; border-radius: var(--border-radius); border: 1px solid var(--border);"></textarea>
+                    </div>
+                    
+                    <button id="send-message-btn" class="btn" style="margin-top: 15px;">Envoyer</button>
+                </div>
+                
+                <button id="close-contact-modal-btn" class="btn btn-outline" style="margin-top: 15px;">Annuler</button>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Gérer les événements des boutons
+        document.getElementById('contact-telegram-btn').onclick = function() {
+            // Ouvrir une conversation Telegram
+            if (telegramApp && telegramApp.openTelegramLink) {
+                telegramApp.openTelegramLink("https://t.me/votre_compte_support");
+            } else {
+                window.open("https://t.me/votre_compte_support", "_blank");
+            }
+            
+            // Enregistrer l'intérêt et fermer le modal
+            recordServiceInterest(serviceId, "telegram");
+            document.body.removeChild(modal);
+        };
+        
+        document.getElementById('send-message-btn').onclick = function() {
+            const email = document.getElementById('contact-email').value;
+            const message = document.getElementById('contact-message').value;
+            
+            if (!email || !message) {
+                showToast("Erreur", "Veuillez remplir tous les champs", "⚠️");
+                return;
+            }
+            
+            // Enregistrer l'intérêt avec le message
+            recordServiceInterest(serviceId, "email", { email, message });
+            
+            // Afficher une confirmation et fermer
+            showToast("Message envoyé", "Nous vous contacterons bientôt", "✅");
+            document.body.removeChild(modal);
+        };
+        
+        document.getElementById('close-contact-modal-btn').onclick = function() {
+            modal.style.opacity = 0;
+            setTimeout(() => {
+                document.body.removeChild(modal);
+            }, 300);
+        };
     };
     
-    // PARTIE 6: AFFICHAGE DES ERREURS
+    // Enregistrer l'intérêt d'un utilisateur pour un service
+    async function recordServiceInterest(serviceId, contactMethod, contactDetails = {}) {
+        if (!db) return;
+        
+        try {
+            // Préparer les données
+            const interestData = {
+                serviceId,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                contactMethod,
+                contactDetails,
+                // Ajouter les informations utilisateur si disponibles
+                userId: currentUser?.id || null,
+                telegramId: currentUser?.telegramId || (telegramApp?.initDataUnsafe?.user?.id?.toString() || null),
+                username: currentUser?.username || (telegramApp?.initDataUnsafe?.user?.username || null)
+            };
+            
+            // Enregistrer dans Firestore
+            // Enregistrer dans Firestore
+            await db.collection('service_interests').add(interestData);
+            
+            console.log(`Intérêt enregistré pour ${serviceId}`);
+        } catch (error) {
+            console.error("Erreur lors de l'enregistrement de l'intérêt:", error);
+        }
+    }
+    
+    // ======================================================
+    // PARTIE 9: FONCTIONS UTILITAIRES
+    // ======================================================
     
     // Affichage de messages d'erreur temporaires
     window.showError = function(message, element) {
         if (!element) return;
         
-        // Créer le message d'erreur
+        // Créer le message d'erreur avec style amélioré
         const errorMessage = document.createElement('div');
         errorMessage.className = 'error-message';
-        errorMessage.textContent = message;
+        errorMessage.innerHTML = `
+            <div style="display: flex; align-items: center;">
+                <span style="margin-right: 8px;">⚠️</span>
+                <span>${message}</span>
+            </div>
+        `;
         
         // Ajouter la classe d'erreur à l'élément
         element.classList.add('input-error');
@@ -524,15 +914,32 @@ document.addEventListener('DOMContentLoaded', function() {
         // Supprimer après un délai
         setTimeout(function() {
             element.classList.remove('input-error');
-            if (errorMessage.parentNode) {
-                errorMessage.parentNode.removeChild(errorMessage);
-            }
+            errorMessage.style.opacity = 0;
+            errorMessage.style.transform = 'translateY(-10px)';
+            errorMessage.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            
+            setTimeout(() => {
+                if (errorMessage.parentNode) {
+                    errorMessage.parentNode.removeChild(errorMessage);
+                }
+            }, 300);
         }, 3000);
     };
     
-    // PARTIE 7: GESTION DE TELEGRAM WEBAPP EVENTS
+    // Ouvrir un lien externe dans Telegram
+    window.openExternalLink = function(url) {
+        if (telegramApp && telegramApp.openLink) {
+            telegramApp.openLink(url);
+        } else {
+            window.open(url, '_blank');
+        }
+    };
     
-    // Événements pour debug Telegram WebApp
+    // ======================================================
+    // PARTIE 10: ÉVÉNEMENTS TELEGRAM
+    // ======================================================
+    
+    // Gestion des événements Telegram WebApp
     if (telegramApp) {
         // Changement de viewport
         telegramApp.onEvent('viewportChanged', function() {
@@ -551,31 +958,68 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Gestion des liens externes
-        window.openExternalLink = function(url) {
-            if (telegramApp && telegramApp.openLink) {
-                telegramApp.openLink(url);
-            } else {
-                window.open(url, '_blank');
+        // Gestion du thème
+        telegramApp.onEvent('themeChanged', function() {
+            if (telegramApp.themeParams) {
+                document.documentElement.style.setProperty('--tg-theme-bg-color', telegramApp.themeParams.bg_color || '#f8f9fa');
+                document.documentElement.style.setProperty('--tg-theme-text-color', telegramApp.themeParams.text_color || '#333333');
+                document.documentElement.style.setProperty('--tg-theme-button-color', telegramApp.themeParams.button_color || '#6366f1');
+                document.documentElement.style.setProperty('--tg-theme-button-text-color', telegramApp.themeParams.button_text_color || '#ffffff');
+                document.documentElement.style.setProperty('--tg-theme-hint-color', telegramApp.themeParams.hint_color || '#999999');
+                document.documentElement.style.setProperty('--tg-theme-link-color', telegramApp.themeParams.link_color || '#2481cc');
             }
-        };
+        });
     }
     
-    // PARTIE 8: INITIALISATION COMPLÈTE
+    // ======================================================
+    // PARTIE 11: INITIALISATION COMPLÈTE
+    // ======================================================
     
     // Initialiser l'application
     function initApp() {
         console.log("Initialisation complète de l'application");
         
-        // Activer l'animation du logo sur la page d'accueil
+        // Animation du logo sur la page d'accueil
         const logoContainer = document.getElementById('logo-animation');
         if (logoContainer && window.initLogoAnimationEffect) {
             window.initLogoAnimationEffect(logoContainer);
         }
         
+        // Vérifier si les fonctions des boutons sont disponibles
+        checkFunctions();
+        
         // Vérifier les limites d'utilisation si l'utilisateur est connecté
         if (currentUser) {
             checkUserLimits();
+        }
+        
+        // Afficher un toast de bienvenue
+        setTimeout(() => {
+            showToast("Bienvenue", "ZERO ANALYZE - Prédictions par les cotes", "🎯");
+        }, 1000);
+    }
+    
+    // Vérifier si les fonctions essentielles sont disponibles
+    function checkFunctions() {
+        const requiredFunctions = [
+            { name: 'navigateTo', object: window },
+            { name: 'resetQuestionnaire', object: window },
+            { name: 'navigateToPreviousStep', object: window },
+            { name: 'navigateToNextStep', object: window },
+            { name: 'initLogoAnimationEffect', object: window }
+        ];
+        
+        let missingFunctions = [];
+        
+        requiredFunctions.forEach(func => {
+            if (typeof func.object[func.name] !== 'function') {
+                console.warn(`Fonction ${func.name} non disponible`);
+                missingFunctions.push(func.name);
+            }
+        });
+        
+        if (missingFunctions.length > 0) {
+            console.warn(`Fonctions manquantes: ${missingFunctions.join(', ')}`);
         }
     }
     
