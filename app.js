@@ -1,11 +1,13 @@
-// app-corrected.js - Logique principale optimisée pour Telegram WebApp avec intégration Firebase
-// Version corrigée pour résoudre les problèmes de boutons non fonctionnels
+// app.js - Logique principale pour Telegram WebApp avec intégration Firebase
+// Version simplifiée pour résoudre les problèmes de boutons
 
 // Attendre que le document soit complètement chargé
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Application initialisée");
     
-    // Initialisation de Firebase - utilise les variables d'environnement de Render
+    // PARTIE 1: INITIALISATION FIREBASE
+    
+    // Configuration de Firebase - utilise les variables d'environnement de Render
     const firebaseConfig = {
         apiKey: process.env.FIREBASE_API_KEY,
         authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -15,12 +17,13 @@ document.addEventListener('DOMContentLoaded', function() {
         appId: process.env.FIREBASE_APP_ID
     };
 
-    let app, db, auth, currentUser;
-    
-    // Partie 1: Initialisation de Firebase
+    // Variables globales pour Firebase
+    let firebaseApp, db, auth, currentUser;
+
+    // Initialisation Firebase
     try {
         if (firebase) {
-            app = firebase.initializeApp(firebaseConfig);
+            firebaseApp = firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
             auth = firebase.auth();
             console.log("Firebase initialisé avec succès");
@@ -28,18 +31,23 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) {
         console.error("Erreur lors de l'initialisation de Firebase:", error);
     }
-
-    // Partie 2: Initialisation de Telegram WebApp
+    
+    // PARTIE 2: TELEGRAM WEBAPP
+    
+    // Variable pour Telegram WebApp
     let telegramApp;
+    
+    // Initialisation de Telegram WebApp
     try {
         telegramApp = window.Telegram?.WebApp;
         if (telegramApp) {
             // Informer Telegram que l'app est prête
             telegramApp.ready();
+            
             // Expansion de l'app pour utiliser tout l'écran disponible
             telegramApp.expand();
             
-            // Appliquer les couleurs du thème Telegram si disponibles
+            // Appliquer les couleurs du thème Telegram
             if (telegramApp.themeParams) {
                 document.documentElement.style.setProperty('--tg-theme-bg-color', telegramApp.themeParams.bg_color || '#f8f9fa');
                 document.documentElement.style.setProperty('--tg-theme-text-color', telegramApp.themeParams.text_color || '#333333');
@@ -48,44 +56,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.documentElement.style.setProperty('--tg-theme-hint-color', telegramApp.themeParams.hint_color || '#999999');
                 document.documentElement.style.setProperty('--tg-theme-link-color', telegramApp.themeParams.link_color || '#2481cc');
             }
+            
+            // Si des données utilisateur sont disponibles, authentifier
+            if (telegramApp.initDataUnsafe?.user) {
+                authenticateUser(telegramApp.initDataUnsafe.user);
+            }
         }
     } catch (error) {
         console.error('Telegram WebApp non disponible:', error);
     }
-
-    // Partie 3: Configuration des événements de base
-    // IMPORTANT: Nous utilisons onclick au lieu de addEventListener pour éviter les conflits
     
-    // Éléments du DOM
-    const pages = document.querySelectorAll('.page');
-    const navButtons = document.querySelectorAll('.nav-item');
-    const startButton = document.getElementById('start-btn');
-    const homeButton = document.getElementById('home-btn');
-    const newPredictionButton = document.getElementById('new-prediction-btn');
-    const prevButton = document.getElementById('prev-btn');
-    const nextButton = document.getElementById('next-btn');
-
-    // Configuration de la navigation principale
-    function navigateTo(pageId, direction = 'forward') {
+    // PARTIE 3: FONCTIONS DE BASE
+    
+    // Fonction de navigation entre les pages
+    window.navigateTo = function(pageId) {
         console.log("Navigation vers:", pageId);
         
         // Masquer toutes les pages
-        pages.forEach(page => {
-            page.classList.remove('active');
-        });
-
+        var pages = document.querySelectorAll('.page');
+        for (var i = 0; i < pages.length; i++) {
+            pages[i].classList.remove('active');
+        }
+        
         // Afficher la page demandée
-        const targetPage = document.getElementById(pageId);
+        var targetPage = document.getElementById(pageId);
         if (targetPage) {
             targetPage.classList.add('active');
             
             // Mettre à jour les boutons de navigation
-            navButtons.forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.id === `nav-${pageId}`) {
-                    btn.classList.add('active');
+            var navButtons = document.querySelectorAll('.nav-item');
+            for (var j = 0; j < navButtons.length; j++) {
+                navButtons[j].classList.remove('active');
+                if (navButtons[j].id === 'nav-' + pageId) {
+                    navButtons[j].classList.add('active');
                 }
-            });
+            }
             
             // Gérer le bouton retour de Telegram
             if (telegramApp && telegramApp.BackButton) {
@@ -95,120 +100,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     telegramApp.BackButton.show();
                 }
             }
-
-            // Événements spécifiques à certaines pages
+            
+            // Actions spécifiques selon la page
             if (pageId === 'home') {
-                // Actions spécifiques à la page d'accueil
                 if (window.initLogoAnimationEffect) {
-                    const logoContainer = document.getElementById('logo-animation');
-                    if (logoContainer) {
-                        window.initLogoAnimationEffect(logoContainer);
-                    }
+                    window.initLogoAnimationEffect(document.getElementById('logo-animation'));
                 }
             } else if (pageId === 'profile') {
-                // Charger le profil utilisateur
                 loadUserProfile();
             } else if (pageId === 'services') {
-                // Charger les services
-                if (window.loadServices) {
-                    window.loadServices();
-                }
+                loadServices();
             }
-
+            
             // Faire défiler vers le haut
             window.scrollTo(0, 0);
-        } else {
-            console.error("Page non trouvée:", pageId);
         }
-    }
-
-    // Initialisation des événements de navigation
-    navButtons.forEach(btn => {
-        btn.onclick = function() {
-            const pageId = this.id.replace('nav-', '');
-            navigateTo(pageId);
-        };
-    });
-
-    // Bouton de démarrage
-    if (startButton) {
-        startButton.onclick = function() {
-            console.log("Bouton démarrer cliqué");
-            // Commencer le questionnaire
-            if (window.resetQuestionnaire) {
-                window.resetQuestionnaire();
-            }
-            navigateTo('questionnaire');
-        };
-    }
-
-    // Bouton retour à l'accueil depuis les résultats
-    if (homeButton) {
-        homeButton.onclick = function() {
-            console.log("Bouton accueil cliqué");
-            navigateTo('home');
-        };
-    }
-
-    // Bouton nouvelle prédiction
-    if (newPredictionButton) {
-        newPredictionButton.onclick = function() {
-            console.log("Bouton nouvelle prédiction cliqué");
-            if (window.resetQuestionnaire) {
-                window.resetQuestionnaire();
-            }
-            navigateTo('questionnaire');
-        };
-    }
-
-    // Boutons de navigation du questionnaire
-    if (prevButton) {
-        prevButton.onclick = function() {
-            console.log("Bouton précédent cliqué");
-            if (window.navigateToPreviousStep) {
-                window.navigateToPreviousStep();
-            }
-        };
-    }
+    };
     
-    if (nextButton) {
-        nextButton.onclick = function() {
-            console.log("Bouton suivant cliqué");
-            if (window.navigateToNextStep) {
-                window.navigateToNextStep();
-            }
-        };
-    }
-
-    // Événements pour les services
-    document.querySelectorAll('.service-info-btn').forEach(btn => {
-        btn.onclick = function() {
-            const serviceId = this.getAttribute('data-service');
-            if (window.showServiceDetails) {
-                window.showServiceDetails(serviceId);
-            } else {
-                alert("Information sur le service: " + serviceId);
-            }
-        };
-    });
+    // Démarrer le questionnaire
+    window.startQuestionnaire = function() {
+        console.log("Démarrage du questionnaire");
+        if (window.resetQuestionnaire) {
+            window.resetQuestionnaire();
+        }
+        window.navigateTo('questionnaire');
+    };
     
-    document.querySelectorAll('.service-contact-btn').forEach(btn => {
-        btn.onclick = function() {
-            const serviceId = this.getAttribute('data-service');
-            if (window.showContactForm) {
-                window.showContactForm(serviceId);
-            } else {
-                alert("Contact pour le service: " + serviceId);
-            }
-        };
-    });
-
-    // Partie 4: Fonctions pour Firebase
-    // Ces fonctions seront exécutées après l'authentification de l'utilisateur
-
-    // Authentification utilisateur via Telegram
-    async function authenticateUser() {
-        if (!telegramApp || !telegramApp.initDataUnsafe?.user || !auth || !db) {
+    // Authentification de l'utilisateur via Telegram
+    async function authenticateUser(telegramUser) {
+        if (!telegramUser || !telegramUser.id || !auth || !db) {
             console.error("Données nécessaires à l'authentification manquantes");
             return null;
         }
@@ -218,19 +138,19 @@ document.addEventListener('DOMContentLoaded', function() {
             await auth.signInAnonymously();
             
             // Vérifier/créer l'utilisateur dans Firestore
-            currentUser = await checkOrCreateUser(telegramApp.initDataUnsafe.user);
+            currentUser = await checkOrCreateUser(telegramUser);
             console.log("Utilisateur authentifié:", currentUser);
             
             // Vérifier les limites d'utilisation
             checkUserLimits();
             
             return currentUser;
-        } catch (authError) {
-            console.error("Erreur d'authentification:", authError);
+        } catch (error) {
+            console.error("Erreur d'authentification:", error);
             return null;
         }
     }
-
+    
     // Vérification ou création de l'utilisateur dans Firestore
     async function checkOrCreateUser(telegramUser) {
         if (!telegramUser || !telegramUser.id || !db) {
@@ -243,8 +163,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Chercher l'utilisateur par son ID Telegram
             const usersRef = db.collection('users');
-            const q = usersRef.where('telegramId', '==', telegramId);
-            const querySnapshot = await q.get();
+            const query = usersRef.where('telegramId', '==', telegramId);
+            const querySnapshot = await query.get();
             
             // Si l'utilisateur existe, retourner ses données
             if (!querySnapshot.empty) {
@@ -288,15 +208,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return null;
         }
     }
-
+    
     // Vérification des limites d'utilisation
     async function checkUserLimits() {
         if (!db || !currentUser || !currentUser.telegramId) return;
         
         try {
             const usersRef = db.collection('users');
-            const q = usersRef.where('telegramId', '==', currentUser.telegramId);
-            const querySnapshot = await q.get();
+            const query = usersRef.where('telegramId', '==', currentUser.telegramId);
+            const querySnapshot = await query.get();
             
             if (querySnapshot.empty) return;
             
@@ -315,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error("Erreur lors de la vérification des limites:", error);
         }
     }
-
+    
     // Affichage des informations de limite
     function displayLimitInfo(limitInfo) {
         // Créer ou mettre à jour l'élément d'information
@@ -338,8 +258,8 @@ document.addEventListener('DOMContentLoaded', function() {
             infoElement.innerHTML = `<span class="limit-badge">${limitInfo.remaining}/${limitInfo.dailyLimit}</span> prédictions restantes`;
         }
     }
-
-    // Fonction pour charger le profil utilisateur
+    
+    // Chargement du profil utilisateur
     function loadUserProfile() {
         const profileContent = document.getElementById('profile-content');
         if (!profileContent) return;
@@ -381,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
         } else {
-            // Message d'erreur à afficher sur la page de profil
+            // Message d'erreur
             profileContent.innerHTML = `
                 <div class="error-message centered">
                     <p>Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
@@ -389,7 +309,54 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
     }
+    
+    // Chargement des services
+    function loadServices() {
+        const servicesListContainer = document.getElementById('services-list');
+        if (!servicesListContainer) return;
+        
+        // Les services sont déjà chargés dans le HTML
+        console.log("Services chargés");
+    }
+    
+    // PARTIE 4: INTÉGRATION AVEC LES RÉSULTATS
+    
+    // Afficher les résultats de prédiction
+    window.showResults = function(results) {
+        // Afficher la page de résultats avec animation
+        window.navigateTo('results');
 
+        // Afficher l'animation de chargement
+        const loadingElement = document.getElementById('loading');
+        const predictionResults = document.getElementById('prediction-results');
+        
+        if (loadingElement) loadingElement.classList.remove('hidden');
+        if (predictionResults) predictionResults.classList.add('hidden');
+        
+        // Simuler le traitement
+        setTimeout(function() {
+            // Cacher l'animation et afficher les résultats
+            if (loadingElement) loadingElement.classList.add('hidden');
+            if (predictionResults) predictionResults.classList.remove('hidden');
+            
+            // Remplir les résultats
+            const score1Element = document.getElementById('score-1');
+            const score2Element = document.getElementById('score-2');
+            const matchResultElement = document.getElementById('match-result');
+            const goalsPredictionElement = document.getElementById('goals-prediction');
+            
+            if (score1Element) score1Element.textContent = results.scoreExact1;
+            if (score2Element) score2Element.textContent = results.scoreExact2;
+            if (matchResultElement) matchResultElement.textContent = results.matchResult;
+            if (goalsPredictionElement) goalsPredictionElement.textContent = results.goalsPrediction;
+            
+            // Enregistrer l'utilisation si l'utilisateur est connecté
+            if (db && currentUser && currentUser.id) {
+                incrementUsageCount(currentUser.id, results);
+            }
+        }, 3000); // 3 secondes d'animation
+    };
+    
     // Incrémenter le compteur d'utilisation dans Firebase
     async function incrementUsageCount(userId, predictionDetails) {
         if (!db) return;
@@ -450,101 +417,124 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.body.appendChild(modal);
         
-        // Fermer le modal
-        document.getElementById('close-limit-modal').onclick = function() {
-            document.body.removeChild(modal);
-        };
-    }
-
-    // Partie 5: Initialisation de l'application
-    function initApp() {
-        // Vérifier si l'authentification utilisateur est possible
-        if (telegramApp && telegramApp.initDataUnsafe?.user && auth && db) {
-            authenticateUser();
+        // Fermer le modal avec un événement onclick
+        const closeButton = document.getElementById('close-limit-modal');
+        if (closeButton) {
+            closeButton.onclick = function() {
+                document.body.removeChild(modal);
+            };
         }
-        
-        // Exposer les fonctions nécessaires au contexte global
-        window.zeroAnalyzeApp = {
-            navigateTo: navigateTo,
-            
-            showResults: function(results) {
-                // Afficher la page de résultats avec animation
-                navigateTo('results');
-
-                // Afficher l'animation de chargement
-                const loadingElement = document.getElementById('loading');
-                const predictionResults = document.getElementById('prediction-results');
-                
-                if (loadingElement) loadingElement.classList.remove('hidden');
-                if (predictionResults) predictionResults.classList.add('hidden');
-                
-                // Simuler le traitement
-                setTimeout(function() {
-                    // Cacher l'animation et afficher les résultats
-                    if (loadingElement) loadingElement.classList.add('hidden');
-                    if (predictionResults) predictionResults.classList.remove('hidden');
-                    
-                    // Remplir les résultats
-                    const score1Element = document.getElementById('score-1');
-                    const score2Element = document.getElementById('score-2');
-                    const matchResultElement = document.getElementById('match-result');
-                    const goalsPredictionElement = document.getElementById('goals-prediction');
-                    
-                    if (score1Element) score1Element.textContent = results.scoreExact1;
-                    if (score2Element) score2Element.textContent = results.scoreExact2;
-                    if (matchResultElement) matchResultElement.textContent = results.matchResult;
-                    if (goalsPredictionElement) goalsPredictionElement.textContent = results.goalsPrediction;
-                    
-                    // Enregistrer l'utilisation si l'utilisateur est connecté
-                    if (db && currentUser && currentUser.id) {
-                        incrementUsageCount(currentUser.id, results);
-                    }
-                }, 3000); // 3 secondes d'animation
-            },
-            
-            // Messages d'erreur temporaires
-            showError: function(message, element) {
-                if (!element) return;
-                
-                // Créer le message d'erreur
-                const errorMessage = document.createElement('div');
-                errorMessage.className = 'error-message';
-                errorMessage.textContent = message;
-                
-                // Ajouter la classe d'erreur à l'élément
-                element.classList.add('input-error');
-                
-                // Ajouter le message après l'élément
-                element.parentNode.appendChild(errorMessage);
-                
-                // Supprimer après un délai
-                setTimeout(function() {
-                    element.classList.remove('input-error');
-                    if (errorMessage.parentNode) {
-                        errorMessage.parentNode.removeChild(errorMessage);
-                    }
-                }, 3000);
-            },
-            
-            // Ouvrir une URL externe dans Telegram
-            openExternalLink: function(url) {
-                if (telegramApp && telegramApp.openLink) {
-                    telegramApp.openLink(url);
-                } else {
-                    window.open(url, '_blank');
-                }
-            }
-        };
-        
-        // Exposer d'autres fonctions utiles au contexte global
-        window.loadUserProfile = loadUserProfile;
     }
     
-    // Initialiser l'application
-    initApp();
+    // PARTIE 5: FONCTIONS POUR LES SERVICES
+    
+    // Afficher les détails d'un service
+    window.showServiceDetails = function(serviceId) {
+        console.log("Affichage des détails du service:", serviceId);
+        
+        // Informations des services
+        const servicesList = [
+            {
+                id: 'telegram-bots',
+                title: 'Création de bots Telegram IA',
+                description: 'Développement de bots avec prédictions automatisées et interactions intelligentes.'
+            },
+            {
+                id: 'webapps',
+                title: 'Développement de WebApps IA',
+                description: 'Applications web comme Zero Analyze, avec intelligence artificielle intégrée.'
+            },
+            {
+                id: 'youtube',
+                title: 'Création de chaînes YouTube',
+                description: 'Stratégie de contenu, branding, scripts, montage et monétisation.'
+            }
+        ];
+        
+        // Trouver le service demandé
+        const service = servicesList.find(s => s.id === serviceId);
+        if (service) {
+            alert(`Service: ${service.title}\n\nDescription: ${service.description}`);
+        } else {
+            alert("Service non trouvé");
+        }
+    };
+    
+    // Afficher le formulaire de contact pour un service
+    window.showContactForm = function(serviceId) {
+        console.log("Affichage du formulaire de contact pour:", serviceId);
+        
+        // Informations des services (même que ci-dessus)
+        const servicesList = [
+            {
+                id: 'telegram-bots',
+                title: 'Création de bots Telegram IA',
+                description: 'Développement de bots avec prédictions automatisées et interactions intelligentes.'
+            },
+            {
+                id: 'webapps',
+                title: 'Développement de WebApps IA',
+                description: 'Applications web comme Zero Analyze, avec intelligence artificielle intégrée.'
+            },
+            {
+                id: 'youtube',
+                title: 'Création de chaînes YouTube',
+                description: 'Stratégie de contenu, branding, scripts, montage et monétisation.'
+            }
+        ];
+        
+        // Trouver le service demandé
+        const service = servicesList.find(s => s.id === serviceId);
+        if (service) {
+            alert(`Contact pour le service: ${service.title}\n\nVeuillez nous contacter via Telegram pour plus d'informations.`);
+            
+            // Si l'utilisateur est authentifié, enregistrer l'intérêt
+            if (currentUser && currentUser.id && db) {
+                // Enregistrer l'intérêt dans Firebase
+                db.collection('service_interests').add({
+                    userId: currentUser.id,
+                    serviceId: serviceId,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(error => {
+                    console.error("Erreur lors de l'enregistrement de l'intérêt:", error);
+                });
+            }
+        } else {
+            alert("Service non trouvé");
+        }
+    };
+    
+    // PARTIE 6: AFFICHAGE DES ERREURS
+    
+    // Affichage de messages d'erreur temporaires
+    window.showError = function(message, element) {
+        if (!element) return;
+        
+        // Créer le message d'erreur
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'error-message';
+        errorMessage.textContent = message;
+        
+        // Ajouter la classe d'erreur à l'élément
+        element.classList.add('input-error');
+        
+        // Ajouter le message après l'élément
+        element.parentNode.appendChild(errorMessage);
+        
+        // Supprimer après un délai
+        setTimeout(function() {
+            element.classList.remove('input-error');
+            if (errorMessage.parentNode) {
+                errorMessage.parentNode.removeChild(errorMessage);
+            }
+        }, 3000);
+    };
+    
+    // PARTIE 7: GESTION DE TELEGRAM WEBAPP EVENTS
     
     // Événements pour debug Telegram WebApp
     if (telegramApp) {
+        // Changement de viewport
         telegramApp.onEvent('viewportChanged', function() {
             console.log('Viewport changed');
         });
@@ -554,11 +544,41 @@ document.addEventListener('DOMContentLoaded', function() {
             telegramApp.BackButton.onClick(function() {
                 const activePage = document.querySelector('.page.active');
                 if (activePage && activePage.id !== 'home') {
-                    navigateTo('home');
+                    window.navigateTo('home');
                 } else {
                     telegramApp.close();
                 }
             });
         }
+        
+        // Gestion des liens externes
+        window.openExternalLink = function(url) {
+            if (telegramApp && telegramApp.openLink) {
+                telegramApp.openLink(url);
+            } else {
+                window.open(url, '_blank');
+            }
+        };
     }
+    
+    // PARTIE 8: INITIALISATION COMPLÈTE
+    
+    // Initialiser l'application
+    function initApp() {
+        console.log("Initialisation complète de l'application");
+        
+        // Activer l'animation du logo sur la page d'accueil
+        const logoContainer = document.getElementById('logo-animation');
+        if (logoContainer && window.initLogoAnimationEffect) {
+            window.initLogoAnimationEffect(logoContainer);
+        }
+        
+        // Vérifier les limites d'utilisation si l'utilisateur est connecté
+        if (currentUser) {
+            checkUserLimits();
+        }
+    }
+    
+    // Démarrer l'application
+    initApp();
 });
