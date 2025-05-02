@@ -2,92 +2,892 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Boutons</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>ZERO ANALYZE</title>
+    <!-- Scripts Telegram WebApp -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Scripts Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- THREE.js pour les animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
+        /* STYLES PRINCIPAUX */
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --secondary: #f59e0b;
+            --text: #333333;
+            --text-light: #666666;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --error: #ef4444;
+            --success: #10b981;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --confidence-high: #10b981;
+            --confidence-medium: #f59e0b;
+            --confidence-low: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            padding-bottom: 70px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 {
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            outline: none;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        /* PAGE & NAVIGATION */
+        .page {
+            display: none;
             padding: 20px;
         }
-        .btn {
-            background-color: #6366f1;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            margin: 10px;
-            border-radius: 12px;
-            font-size: 16px;
-            cursor: pointer;
+
+        .page.active {
+            display: block;
         }
-        .nav {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
+
+        #home {
+            text-align: center;
+            padding-top: 40px;
+        }
+
+        .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
-            background: white;
+            right: 0;
+            background: var(--card);
+            display: flex;
+            justify-content: space-around;
             padding: 10px 0;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 100;
         }
-        .nav-btn {
+
+        .nav-item {
             display: flex;
             flex-direction: column;
             align-items: center;
             font-size: 12px;
         }
+
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        /* BOUTONS & FORMULAIRES */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            margin: 15px 0;
+            box-shadow: 0 8px 15px rgba(99, 102, 241, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 5px 10px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(99, 102, 241, 0.05);
+        }
+
+        .form-nav {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .form-nav .btn {
+            width: 45%;
+            max-width: 200px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+            outline: none;
+            transform: translateY(-2px);
+        }
+
+        /* COMPOSANTS */
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 15px 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo-container {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 5px 15px rgba(99, 102, 241, 0.3));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .tagline {
+            font-size: 16px;
+            color: var(--text-light);
+            max-width: 90%;
+            margin: 0 auto 40px;
+        }
+
+        .card {
+            background-color: var(--card);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            transform: translateY(0);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .progress {
+            height: 8px;
+            background-color: rgba(99, 102, 241, 0.2);
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 5px rgba(99, 102, 241, 0.5);
+        }
+
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .step {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(99, 102, 241, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+            transform: scale(1.2);
+        }
+
+        .score-box {
+            display: flex;
+            justify-content: space-around;
+            margin:.3s ease;
+        }
+
+        .step.active {
+            background-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+            transform: scale(1.2);
+        }
+
+        .score-box {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+
+        .score {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 20px 25px;
+            border-radius: var(--border-radius);
+            font-size: 28px;
+            font-weight: bold;
+            min-width: 100px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .score:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4);
+        }
+        
+        .confidence-container {
+            display: inline-block;
+            padding: 3px;
+            margin-top: 15px;
+            border: 2px solid var(--success);
+            border-radius: 22px;
+            box-shadow: 0 5px 10px rgba(16, 185, 129, 0.3);
+        }
+        
+        .confidence-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+            font-size: 14px;
+            background-color: var(--success);
+            transition: all 0.3s ease;
+        }
+        
+        .confidence-badge:hover {
+            transform: translateY(-2px);
+        }
+        
+        .argument-list {
+            margin: 0 auto 30px;
+            text-align: left;
+            max-width: 90%;
+        }
+        
+        .argument-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .argument-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .argument-icon {
+            font-size: 24px;
+            margin-right: 10px;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .argument-item:hover .argument-icon {
+            transform: scale(1.2);
+        }
+        
+        .argument-text {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        /* ANIMATIONS 3D pour le chargement */
+        .loading-container {
+            margin: 30px auto;
+            perspective: 800px;
+            width: 100px;
+            height: 100px;
+            position: relative;
+        }
+
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+            animation: cube-rotate 5s infinite linear;
+        }
+
+        .cube-face {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            opacity: 0.8;
+            border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+
+        .front {
+            transform: translateZ(50px);
+            background: linear-gradient(45deg, var(--primary), var(--primary-light));
+        }
+
+        .back {
+            transform: rotateY(180deg) translateZ(50px);
+            background: linear-gradient(45deg, var(--primary-light), var(--primary));
+        }
+
+        .right {
+            transform: rotateY(90deg) translateZ(50px);
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+        }
+
+        .left {
+            transform: rotateY(-90deg) translateZ(50px);
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+        }
+
+        .top {
+            transform: rotateX(90deg) translateZ(50px);
+            background: linear-gradient(45deg, var(--primary-light), var(--secondary));
+        }
+
+        .bottom {
+            transform: rotateX(-90deg) translateZ(50px);
+            background: linear-gradient(45deg, var(--secondary), var(--primary-light));
+        }
+
+        @keyframes cube-rotate {
+            0% {
+                transform: rotateX(0deg) rotateY(0deg);
+            }
+            100% {
+                transform: rotateX(360deg) rotateY(360deg);
+            }
+        }
+
+        .loading-text {
+            text-align: center;
+            margin: 15px 0;
+            font-weight: 500;
+            font-size: 16px;
+            color: var(--primary);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        /* UTILITAIRES */
+        .hidden {
+            display: none !important;
+        }
+
+        .centered {
+            text-align: center;
+        }
+
+        .error-message {
+            color: var(--error);
+            font-size: 14px;
+            margin-top: 5px;
+            font-weight: 500;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .input-error {
+            border-color: var(--error) !important;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+        }
+        
+        .question-label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .question-hint {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .question-group {
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .question-group:hover {
+            transform: translateY(-3px);
+        }
+
+        /* STYLES POUR FIREBASE INTEGRATION */
+        .limit-banner-container {
+            margin: 10px auto 20px;
+            max-width: 90%;
+        }
+
+        .limit-banner {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: rgba(99, 102, 241, 0.1);
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .limit-icon {
+            font-size: 20px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .limit-text {
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .limit-text p {
+            margin: 0;
+        }
+
+        .limit-message {
+            text-align: center;
+            padding: 10px;
+            margin: 15px 0;
+            background-color: rgba(99, 102, 241, 0.1);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .limit-message.error {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+
+        /* Styles pour la page profil */
+        .stats-container {
+            margin-top: 20px;
+        }
+
+        .stats-card,
+        .history-card {
+            background-color: rgba(99, 102, 241, 0.05);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 5px;
+        }
+
+        .prediction-history {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+        }
+
+        .history-item {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: var(--text-light);
+            width: 100px;
+            flex-shrink: 0;
+        }
+
+        .history-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .history-score {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .history-result {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        /* Styles pour l'erreur d'authentification */
+        .error-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .error-subtitle {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-top: 10px;
+        }
+        
+        /* Animations supplémentaires */
+        @keyframes logoReveal {
+            0% {
+                opacity: 0;
+                transform: scale(0.6);
+            }
+            60% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .app-title {
+            animation: logoReveal 1.2s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutLeft {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Test Boutons</h1>
-    <button id="test-btn" class="btn">Test Bouton</button>
-    <p id="output">Cliquez sur un bouton</p>
-    
-    <div class="nav">
-        <div id="nav-home" class="nav-btn">
-            <div>🏠</div>
-            <span>Accueil</span>
-        </div>
-        <div id="nav-services" class="nav-btn">
-            <div>🛠️</div>
-            <span>Services</span>
-        </div>
-        <div id="nav-profile" class="nav-btn">
-            <div>👤</div>
-            <span>Profil</span>
-        </div>
+    <div id="app">
+        <!-- PAGE D'ACCUEIL -->
+        <section id="home" class="page active">
+            <div id="logo-animation" class="logo-container">
+                <svg width="90" height="90" viewBox="0 0 90 90">
+                    <circle cx="45" cy="45" r="40" fill="none" stroke="#6366f1" stroke-width="3" />
+                    <circle cx="45" cy="45" r="30" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3" />
+                    <path d="M25,45 L40,30 L50,40 L65,25" fill="none" stroke="#6366f1" stroke-width="4" />
+                    <circle cx="65" cy="25" r="6" fill="#f59e0b" />
+                    <text x="32" y="60" font-family="Arial" font-size="12" font-weight="bold" fill="#333">ZERO</text>
+                </svg>
+            </div>
+            <div class="logo">ZERO ANALYZE</div>
+            <p class="tagline">Bienvenue dans ZERO ANALYZE. Ici, aucune analyse, aucun doute. Juste les cotes. Juste les chiffres.</p>
+            
+            <!-- Bannière des limites de prédictions -->
+            <div id="limit-banner-container" class="limit-banner-container"></div>
+            
+            <button id="start-btn" class="btn">Commencer</button>
+            
+            <div class="argument-list">
+                <div class="argument-item">
+                    <div class="argument-icon">🎯</div>
+                    <div class="argument-text">Pas besoin d'analyser qui est en forme - les cotes reflètent déjà toute l'information</div>
+                </div>
+                <div class="argument-item">
+                    <div class="argument-icon">📊</div>
+                    <div class="argument-text">Rien à voir avec les statistiques - nous lisons entre les lignes des bookmakers</div>
+                </div>
+                <div class="argument-item">
+                    <div class="argument-icon">💡</div>
+                    <div class="argument-text">Battez le bookmaker avec ses propres cotes - interprétez ce qu'ils ne veulent pas vous dire</div>
+                </div>
+                <div class="argument-item">
+                    <div class="argument-icon">⚡</div>
+                    <div class="argument-text">Vitesse et efficacité - prédictions instantanées sans recherche fastidieuse</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- QUESTIONNAIRE -->
+        <section id="questionnaire" class="page">
+            <div class="progress">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            
+            <div id="step-indicators" class="steps"></div>
+            
+            <h2 id="step-title">Cotes 1N2</h2>
+            
+            <div id="questions-container" class="card"></div>
+            
+            <div class="form-nav">
+                <button id="prev-btn" class="btn btn-outline">Précédent</button>
+                <button id="next-btn" class="btn">Suivant</button>
+            </div>
+        </section>
+
+        <!-- RÉSULTATS -->
+        <section id="results" class="page">
+            <h2>Prédiction</h2>
+            
+            <div id="loading" class="hidden">
+                <div class="loading-container">
+                    <div class="cube">
+                        <div class="cube-face front">ZERO</div>
+                        <div class="cube-face back">ANALYZE</div>
+                        <div class="cube-face right">COTES</div>
+                        <div class="cube-face left">PREDI</div>
+                        <div class="cube-face top">PARIS</div>
+                        <div class="cube-face bottom">GAINS</div>
+                    </div>
+                </div>
+                <p class="loading-text">Analyse des cotes en cours...</p>
+                <p class="loading-text">Traitement des probabilités...</p>
+                <p class="loading-text">Lecture entre les lignes...</p>
+            </div>
+            
+            <div id="prediction-results" class="hidden">
+                <div class="card">
+                    <h3>Scores exacts possibles</h3>
+                    <div class="score-box">
+                        <div id="score-1" class="score">0-0</div>
+                        <div id="score-2" class="score">1-1</div>
+                    </div>
+                    <div class="centered">
+                        <div class="confidence-container">
+                            <span id="score-confidence" class="confidence-badge">Confiance 98%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Résultat du match</h3>
+                    <p id="match-result" class="centered">Match nul</p>
+                    <div class="centered">
+                        <div class="confidence-container">
+                            <span id="result-confidence" class="confidence-badge">Confiance 95%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Nombre de buts</h3>
+                    <p id="goals-prediction" class="centered">Moins de 3,5 buts</p>
+                    <div class="centered">
+                        <div class="confidence-container">
+                            <span id="goals-confidence" class="confidence-badge">Confiance 97%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Message pour les limites de prédictions -->
+                <div id="limit-message" class="limit-message hidden"></div>
+                
+                <button id="new-prediction-btn" class="btn">Nouvelle prédiction</button>
+                <button id="home-btn" class="btn btn-outline">Retour à l'accueil</button>
+            </div>
+        </section>
+
+        <!-- PROFIL -->
+        <section id="profile" class="page">
+            <h2>Profil</h2>
+            <div id="profile-content" class="card">
+                <p class="centered">Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
+            </div>
+        </section>
+
+        <!-- SERVICES -->
+        <section id="services" class="page">
+            <h2>Mes Services</h2>
+            <div id="services-list">
+                <!-- Carte de service 1 -->
+                <div class="card">
+                    <h3>Création de bots Telegram IA</h3>
+                    <p>Bot avec prédictions automatisées</p>
+                    <div class="form-nav">
+                        <button class="btn btn-outline service-info-btn" data-service="telegram-bots">Aperçu</button>
+                        <button class="btn service-contact-btn" data-service="telegram-bots">Contact</button>
+                    </div>
+                </div>
+                
+                <!-- Carte de service 2 -->
+                <div class="card">
+                    <h3>Développement de WebApps IA</h3>
+                    <p>WebApp comme Zero Analyze</p>
+                    <div class="form-nav">
+                        <button class="btn btn-outline service-info-btn" data-service="webapps">Aperçu</button>
+                        <button class="btn service-contact-btn" data-service="webapps">Contact</button>
+                    </div>
+                </div>
+                
+                <!-- Carte de service 3 -->
+                <div class="card">
+                    <h3>Création de chaînes YouTube</h3>
+                    <p>Branding, scripts, monétisation</p>
+                    <div class="form-nav">
+                        <button class="btn btn-outline service-info-btn" data-service="youtube">Aperçu</button>
+                        <button class="btn service-contact-btn" data-service="youtube">Contact</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NAVIGATION -->
+        <nav class="bottom-nav">
+            <div id="nav-home" class="nav-item active">
+                <div class="nav-icon">🏠</div>
+                <span>Accueil</span>
+            </div>
+            <div id="nav-services" class="nav-item">
+                <div class="nav-icon">🛠️</div>
+                <span>Services</span>
+            </div>
+            <div id="nav-profile" class="nav-item">
+                <div class="nav-icon">👤</div>
+                <span>Profil</span>
+            </div>
+        </nav>
     </div>
 
-    <script>
-        // Script simple pour tester les événements de clic
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Page chargée');
-            
-            // Test bouton principal
-            const testBtn = document.getElementById('test-btn');
-            const output = document.getElementById('output');
-            
-            if (testBtn) {
-                testBtn.addEventListener('click', function() {
-                    console.log('Bouton cliqué');
-                    output.textContent = 'Bouton cliqué à ' + new Date().toLocaleTimeString();
-                    alert('Bouton cliqué !');
-                });
-            }
-            
-            // Test boutons de navigation
-            const navButtons = document.querySelectorAll('.nav-btn');
-            navButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    console.log('Navigation cliquée: ' + this.id);
-                    output.textContent = 'Navigation: ' + this.id;
-                    alert('Navigation: ' + this.id);
-                });
-            });
-        });
-    </script>
+    <!-- Scripts de base -->
+    <script src="animation.js"></script>
+    <script src="prediction.js"></script>
+    <script src="app-corrected.js"></script>
 </body>
 </html>
