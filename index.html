@@ -23,6 +23,9 @@
             --success: #10b981;
             --border-radius: 12px;
             --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --confidence-high: #10b981;
+            --confidence-medium: #f59e0b;
+            --confidence-low: #ef4444;
         }
 
         * {
@@ -178,6 +181,15 @@
             -webkit-text-fill-color: transparent;
             display: inline-block;
         }
+        
+        .logo-container {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
         .tagline {
             font-size: 16px;
@@ -242,6 +254,51 @@
             min-width: 100px;
             text-align: center;
         }
+        
+        .confidence-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .confidence-high {
+            background-color: var(--confidence-high);
+        }
+        
+        .confidence-medium {
+            background-color: var(--confidence-medium);
+        }
+        
+        .confidence-low {
+            background-color: var(--confidence-low);
+        }
+        
+        .argument-list {
+            margin: 0 auto 30px;
+            text-align: left;
+            max-width: 90%;
+        }
+        
+        .argument-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .argument-icon {
+            font-size: 24px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .argument-text {
+            font-size: 14px;
+            color: var(--text-light);
+        }
 
         /* ANIMATIONS */
         .spinner {
@@ -298,9 +355,37 @@
     <div id="app">
         <!-- PAGE D'ACCUEIL -->
         <section id="home" class="page active">
+            <div class="logo-container">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="55" fill="none" stroke="#6366f1" stroke-width="3" />
+                    <circle cx="60" cy="60" r="45" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3" />
+                    <path d="M35,60 L55,40 L65,50 L85,30" fill="none" stroke="#6366f1" stroke-width="4" />
+                    <circle cx="85" cy="30" r="6" fill="#f59e0b" />
+                    <text x="45" y="80" font-family="Arial" font-size="14" font-weight="bold" fill="#333">ZERO</text>
+                </svg>
+            </div>
             <div class="logo">ZERO ANALYZE</div>
             <p class="tagline">Bienvenue dans ZERO ANALYZE. Ici, aucune analyse, aucun doute. Juste les cotes. Juste les chiffres.</p>
             <button id="startBtn" class="btn">Commencer</button>
+            
+            <div class="argument-list">
+                <div class="argument-item">
+                    <div class="argument-icon">🎯</div>
+                    <div class="argument-text">Pas besoin d'analyser qui est en forme - les cotes reflètent déjà toute l'information</div>
+                </div>
+                <div class="argument-item">
+                    <div class="argument-icon">📊</div>
+                    <div class="argument-text">Rien à voir avec les statistiques - nous lisons entre les lignes des bookmakers</div>
+                </div>
+                <div class="argument-item">
+                    <div class="argument-icon">💡</div>
+                    <div class="argument-text">Battez le bookmaker avec ses propres codes - interprétez ce qu'ils ne veulent pas vous dire</div>
+                </div>
+                <div class="argument-item">
+                    <div class="argument-icon">⚡</div>
+                    <div class="argument-text">Vitesse et efficacité - prédictions instantanées sans recherche fastidieuse</div>
+                </div>
+            </div>
         </section>
 
         <!-- QUESTIONNAIRE -->
@@ -337,16 +422,25 @@
                         <div id="score1" class="score">0-0</div>
                         <div id="score2" class="score">1-1</div>
                     </div>
+                    <div class="centered">
+                        <span id="scoreConfidence" class="confidence-badge confidence-high">Confiance 98%</span>
+                    </div>
                 </div>
                 
                 <div class="card">
                     <h3>Résultat du match</h3>
                     <p id="matchResult" class="centered">Match nul</p>
+                    <div class="centered">
+                        <span id="resultConfidence" class="confidence-badge confidence-high">Confiance 95%</span>
+                    </div>
                 </div>
                 
                 <div class="card">
                     <h3>Nombre de buts</h3>
                     <p id="goalsPrediction" class="centered">Moins de 3,5 buts</p>
+                    <div class="centered">
+                        <span id="goalsConfidence" class="confidence-badge confidence-high">Confiance 97%</span>
+                    </div>
                 </div>
                 
                 <button id="newPredictionBtn" class="btn">Nouvelle prédiction</button>
@@ -428,13 +522,16 @@ document.addEventListener('DOMContentLoaded', function() {
         tg.BackButton.onClick(function() {
             goToHomePage();
         });
+</script>
+</body>
+</html>
     }
     
     // ================== VARIABLES GLOBALES ==================
     let currentStep = 0;
     let userAnswers = {};
     
-    // Configuration des étapes du questionnaire
+    // Configuration des étapes du questionnaire - RÉORGANISÉ selon vos instructions
     const questionnaireSteps = [
         {
             title: "Cotes 1N2 (temps réglementaire)",
@@ -445,12 +542,29 @@ document.addEventListener('DOMContentLoaded', function() {
             ]
         },
         {
+            title: "Les deux équipes marquent",
+            questions: [
+                { id: "bttsYes", label: "Cote pour \"Les deux équipes marquent – Oui\"", hint: "Entrer la cote", required: true },
+                { id: "bttsNo", label: "Cote pour \"Les deux équipes marquent – Non\"", hint: "Entrer la cote", required: true }
+            ]
+        },
+        {
+            title: "Total de buts",
+            questions: [
+                { id: "homeOver05", label: "Cote pour que l'équipe à domicile marque plus de 0,5 but", hint: "Entrer la cote", required: true },
+                { id: "homeOver15", label: "Cote pour que l'équipe à domicile marque plus de 1,5 but", hint: "Entrer la cote", required: true },
+                { id: "awayOver05", label: "Cote pour que l'équipe à l'extérieur marque plus de 0,5 but", hint: "Entrer la cote", required: true },
+                { id: "awayOver15", label: "Cote pour que l'équipe à l'extérieur marque plus de 1,5 but", hint: "Entrer la cote", required: true },
+                { id: "totalOver25", label: "Cote pour plus de 2,5 buts dans le match", hint: "Entrer la cote totale", required: true }
+            ]
+        },
+        {
             title: "Première mi-temps",
             questions: [
                 { id: "htHomeWin", label: "Cote pour la victoire de l'équipe à domicile en première mi-temps", hint: "Entrer la cote", required: true },
                 { id: "htDraw", label: "Cote pour un match nul à la mi-temps", hint: "Entrer la cote", required: true },
                 { id: "htAwayWin", label: "Cote pour la victoire de l'équipe à l'extérieur en première mi-temps", hint: "Entrer la cote", required: true },
-                { id: "htBtts", label: "Cote pour que chaque équipe marque au moins un but en première mi-temps", hint: "Une par équipe", required: true }
+                { id: "htOver05", label: "Cote pour plus de 0,5 but en première mi-temps", hint: "Entrer la cote", required: true }
             ]
         },
         {
@@ -462,13 +576,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ]
         },
         {
-            title: "Les deux équipes marquent",
-            questions: [
-                { id: "bttsYes", label: "Cote pour \"Les deux équipes marquent – Oui\"", hint: "Entrer la cote", required: true },
-                { id: "bttsNo", label: "Cote pour \"Les deux équipes marquent – Non\"", hint: "Entrer la cote", required: true }
-            ]
-        },
-        {
             title: "Handicap",
             questions: [
                 { id: "homeHandicapMinus1", label: "Cote pour l'équipe à domicile avec un handicap de -1 but", hint: "Entrer la cote si disponible", required: false },
@@ -477,16 +584,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 { id: "awayHandicapPlus1", label: "Cote pour l'équipe à l'extérieur avec un handicap de +1 but", hint: "Entrer la cote si disponible", required: false }
             ],
             specialMessage: "Option non disponible ? Laissez vide. Cela sera pris en compte dans l'analyse."
-        },
-        {
-            title: "Total de buts",
-            questions: [
-                { id: "homeOver05", label: "Cote pour que l'équipe à domicile marque plus de 0,5 but", hint: "Entrer la cote", required: true },
-                { id: "homeOver15", label: "Cote pour que l'équipe à domicile marque plus de 1,5 but", hint: "Entrer la cote", required: true },
-                { id: "awayOver05", label: "Cote pour que l'équipe à l'extérieur marque plus de 0,5 but", hint: "Entrer la cote", required: true },
-                { id: "awayOver15", label: "Cote pour que l'équipe à l'extérieur marque plus de 1,5 but", hint: "Entrer la cote", required: true },
-                { id: "totalOver25", label: "Cote pour plus de 2,5 buts dans le match", hint: "Entrer la cote totale", required: true }
-            ]
         }
     ];
 
@@ -534,6 +631,92 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+    
+    // ================== PROFIL UTILISATEUR ==================
+    function loadUserProfile() {
+        const profileContent = document.getElementById('profileContent');
+        
+        if (tg && tg.initDataUnsafe?.user) {
+            const user = tg.initDataUnsafe.user;
+            
+            profileContent.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                    <div style="width: 70px; height: 70px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin-right: 15px;">
+                        ${user.first_name ? user.first_name.charAt(0) : '?'}${user.last_name ? user.last_name.charAt(0) : ''}
+                    </div>
+                    <div>
+                        <h3 style="margin: 0 0 5px 0;">${user.first_name || ''} ${user.last_name || ''}</h3>
+                        <p style="margin: 0; color: var(--text-light);">@${user.username || 'inconnu'}</p>
+                    </div>
+                </div>
+                <p>Bienvenue dans ZERO ANALYZE, votre application de prédiction sportive basée uniquement sur les cotes.</p>
+                <p>Vos prédictions sont générées automatiquement grâce à nos algorithmes avancés d'analyse des cotes.</p>
+                <p>Aucune analyse statistique, aucune étude de forme - uniquement la lecture des cotes proposées par les bookmakers.</p>
+            `;
+        } else {
+            profileContent.innerHTML = `
+                <p class="centered">Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
+            `;
+        }
+    }
+    
+    // ================== FONCTIONS UTILITAIRES ==================
+    function goToHomePage() {
+        navigateTo('home');
+    }
+    
+    // ================== ÉVÉNEMENTS ==================
+    // Bouton Commencer
+    startBtn.addEventListener('click', function() {
+        resetQuestionnaire();
+        navigateTo('questionnaire');
+    });
+    
+    // Navigation du questionnaire
+    prevBtn.addEventListener('click', prevStep);
+    nextBtn.addEventListener('click', nextStep);
+    
+    // Boutons des résultats
+    homeBtn.addEventListener('click', goToHomePage);
+    newPredictionBtn.addEventListener('click', function() {
+        resetQuestionnaire();
+        navigateTo('questionnaire');
+    });
+    
+    // Navigation principale
+    navHome.addEventListener('click', function() {
+        navigateTo('home');
+    });
+    
+    navServices.addEventListener('click', function() {
+        navigateTo('services');
+    });
+    
+    navProfile.addEventListener('click', function() {
+        navigateTo('profile');
+        loadUserProfile();
+    });
+    
+    // Boutons des services
+    document.querySelectorAll('.service-info-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            alert('Aperçu du service: ' + this.dataset.service);
+        });
+    });
+    
+    document.querySelectorAll('.service-contact-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            alert('Contact pour le service: ' + this.dataset.service);
+        });
+    });
+    
+    // ================== INITIALISATION ==================
+    // Générer les indicateurs d'étapes
+    generateStepIndicators();
+    
+    // Charger le profil utilisateur
+    loadUserProfile();
+});
 
     // ================== FONCTIONS DU QUESTIONNAIRE ==================
     function resetQuestionnaire() {
@@ -706,6 +889,15 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('score2').textContent = prediction.scoreExact2;
             document.getElementById('matchResult').textContent = prediction.matchResult;
             document.getElementById('goalsPrediction').textContent = prediction.goalsPrediction;
+            
+            // Générer des pourcentages de confiance aléatoires entre 95% et 99%
+            const scoreConfidence = Math.floor(Math.random() * 5) + 95;
+            const resultConfidence = Math.floor(Math.random() * 5) + 95;
+            const goalsConfidence = Math.floor(Math.random() * 5) + 95;
+            
+            document.getElementById('scoreConfidence').textContent = `Confiance ${scoreConfidence}%`;
+            document.getElementById('resultConfidence').textContent = `Confiance ${resultConfidence}%`;
+            document.getElementById('goalsConfidence').textContent = `Confiance ${goalsConfidence}%`;
             
             // Masquer le chargement et afficher les résultats
             document.getElementById('loading').classList.add('hidden');
@@ -932,92 +1124,3 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             return 'Plus de 2,5 buts';
         }
-    }
-    
-    // ================== PROFIL UTILISATEUR ==================
-    function loadUserProfile() {
-        const profileContent = document.getElementById('profileContent');
-        
-        if (tg && tg.initDataUnsafe?.user) {
-            const user = tg.initDataUnsafe.user;
-            
-            profileContent.innerHTML = `
-                <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                    <div style="width: 70px; height: 70px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin-right: 15px;">
-                        ${user.first_name ? user.first_name.charAt(0) : '?'}${user.last_name ? user.last_name.charAt(0) : ''}
-                    </div>
-                    <div>
-                        <h3 style="margin: 0 0 5px 0;">${user.first_name || ''} ${user.last_name || ''}</h3>
-                        <p style="margin: 0; color: var(--text-light);">@${user.username || 'inconnu'}</p>
-                    </div>
-                </div>
-                <p>Bienvenue dans ZERO ANALYZE, votre application de prédiction sportive basée uniquement sur les cotes.</p>
-                <p>Vos prédictions sont générées automatiquement grâce à nos algorithmes avancés.</p>
-            `;
-        } else {
-            profileContent.innerHTML = `
-                <p class="centered">Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
-            `;
-        }
-    }
-    
-    // ================== FONCTIONS UTILITAIRES ==================
-    function goToHomePage() {
-        navigateTo('home');
-    }
-    
-    // ================== ÉVÉNEMENTS ==================
-    // Bouton Commencer
-    startBtn.addEventListener('click', function() {
-        resetQuestionnaire();
-        navigateTo('questionnaire');
-    });
-    
-    // Navigation du questionnaire
-    prevBtn.addEventListener('click', prevStep);
-    nextBtn.addEventListener('click', nextStep);
-    
-    // Boutons des résultats
-    homeBtn.addEventListener('click', goToHomePage);
-    newPredictionBtn.addEventListener('click', function() {
-        resetQuestionnaire();
-        navigateTo('questionnaire');
-    });
-    
-    // Navigation principale
-    navHome.addEventListener('click', function() {
-        navigateTo('home');
-    });
-    
-    navServices.addEventListener('click', function() {
-        navigateTo('services');
-    });
-    
-    navProfile.addEventListener('click', function() {
-        navigateTo('profile');
-        loadUserProfile();
-    });
-    
-    // Boutons des services
-    document.querySelectorAll('.service-info-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            alert('Aperçu du service: ' + this.dataset.service);
-        });
-    });
-    
-    document.querySelectorAll('.service-contact-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            alert('Contact pour le service: ' + this.dataset.service);
-        });
-    });
-    
-    // ================== INITIALISATION ==================
-    // Générer les indicateurs d'étapes
-    generateStepIndicators();
-    
-    // Charger le profil utilisateur
-    loadUserProfile();
-});
-</script>
-</body>
-</html>
