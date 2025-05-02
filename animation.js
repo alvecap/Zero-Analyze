@@ -1,4 +1,5 @@
 // animation.js - Gestion des animations visuelles et 3D
+// Version améliorée avec effets visuels plus modernes
 
 /**
  * Initialise l'animation du logo sur la page d'accueil
@@ -24,13 +25,18 @@ function initLogoAnimationEffect(container) {
     container.style.width = '150px';
     container.style.height = '150px';
     
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({ 
+        alpha: true, 
+        antialias: true 
+    });
     renderer.setSize(150, 150);
     renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
     container.appendChild(renderer.domElement);
     
-    // Créer les éléments du logo
-    const geometry = new THREE.IcosahedronGeometry(30, 1);
+    // Créer les éléments du logo avec effets améliorés
+    // Icosaèdre principal avec effet de fil de fer
+    const geometry = new THREE.IcosahedronGeometry(30, 2); // Plus détaillé
     const material = new THREE.MeshBasicMaterial({
         color: 0x6366f1,
         wireframe: true,
@@ -41,8 +47,8 @@ function initLogoAnimationEffect(container) {
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
     
-    // Ajouter une sphère intérieure
-    const innerGeometry = new THREE.SphereGeometry(20, 16, 16);
+    // Sphère intérieure avec brillance
+    const innerGeometry = new THREE.SphereGeometry(20, 32, 32); // Plus lisse
     const innerMaterial = new THREE.MeshBasicMaterial({
         color: 0xf59e0b,
         transparent: true,
@@ -52,16 +58,17 @@ function initLogoAnimationEffect(container) {
     const innerMesh = new THREE.Mesh(innerGeometry, innerMaterial);
     scene.add(innerMesh);
     
-    // Ajouter des particules
+    // Effet de particules plus élaboré
     const particlesGeometry = new THREE.BufferGeometry();
-    const particleCount = 50;
+    const particleCount = 100; // Plus de particules
     
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
+    const sizes = new Float32Array(particleCount);
     
     for (let i = 0; i < particleCount; i++) {
         // Position aléatoire dans une sphère
-        const radius = 40 * Math.random();
+        const radius = 40 * Math.pow(Math.random(), 1/3); // Distribution uniforme
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.random() * Math.PI;
         
@@ -69,20 +76,26 @@ function initLogoAnimationEffect(container) {
         positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
         positions[i * 3 + 2] = radius * Math.cos(phi);
         
-        // Couleur dégradée
+        // Couleur dégradée améliorée
         colors[i * 3] = 0.5 + Math.random() * 0.5; // R (bleu-violet)
         colors[i * 3 + 1] = 0.3 + Math.random() * 0.4; // G
-        colors[i * 3 + 2] = 1.0; // B
+        colors[i * 3 + 2] = 0.8 + Math.random() * 0.2; // B (plus lumineux)
+        
+        // Tailles variables
+        sizes[i] = 2 * (1 + Math.random());
     }
     
     particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    particlesGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
     
+    // Créer un matériau de points avec shader personnalisé pour des points plus jolis
     const particlesMaterial = new THREE.PointsMaterial({
         size: 2,
         vertexColors: true,
         transparent: true,
-        opacity: 0.8
+        opacity: 0.8,
+        sizeAttenuation: true
     });
     
     const particles = new THREE.Points(particlesGeometry, particlesMaterial);
@@ -97,23 +110,57 @@ function initLogoAnimationEffect(container) {
     let pulseDirection = 1;
     let pulseScale = 1;
     
-    // Fonction d'animation
+    // Fonction d'animation avec effets améliorés
     function animate() {
         animationFrameId = requestAnimationFrame(animate);
         
-        // Rotation
+        // Rotation avec différentes vitesses pour chaque axe
         mesh.rotation.x += rotationSpeed;
         mesh.rotation.y += rotationSpeed * 1.5;
+        mesh.rotation.z += rotationSpeed * 0.5;
+        
         innerMesh.rotation.y += rotationSpeed * 0.8;
         innerMesh.rotation.z += rotationSpeed * 0.6;
-        particles.rotation.y -= rotationSpeed * 0.3;
         
-        // Effet de pulsation
-        pulseScale += 0.01 * pulseDirection;
-        if (pulseScale > 1.1) pulseDirection = -1;
+        particles.rotation.y -= rotationSpeed * 0.3;
+        particles.rotation.x += rotationSpeed * 0.1;
+        
+        // Effet de pulsation amélioré
+        pulseScale += 0.008 * pulseDirection;
+        if (pulseScale > 1.15) pulseDirection = -1;
         if (pulseScale < 0.9) pulseDirection = 1;
         
+        // Appliquer la pulsation à différents éléments
         innerMesh.scale.set(pulseScale, pulseScale, pulseScale);
+        
+        // Faire légèrement pulser l'icosaèdre en sens inverse
+        const inversePulse = 1 + (1 - pulseScale) * 0.3;
+        mesh.scale.set(inversePulse, inversePulse, inversePulse);
+        
+        // Modifier l'opacité en fonction de la pulsation
+        material.opacity = 0.7 + (pulseScale - 0.9) * 0.3;
+        innerMaterial.opacity = 0.5 + (pulseScale - 0.9) * 0.3;
+        
+        // Animer les particules
+        const positions = particlesGeometry.attributes.position.array;
+        for (let i = 0; i < particleCount; i++) {
+            const i3 = i * 3;
+            
+            // Faire "respirer" légèrement les particules
+            const x = positions[i3];
+            const y = positions[i3 + 1];
+            const z = positions[i3 + 2];
+            
+            const distance = Math.sqrt(x*x + y*y + z*z);
+            const normalizedDistance = Math.min(distance / 40, 1);
+            
+            const breathingFactor = 1 + Math.sin(Date.now() * 0.001 + normalizedDistance * 5) * 0.03;
+            
+            positions[i3] = x * breathingFactor;
+            positions[i3 + 1] = y * breathingFactor;
+            positions[i3 + 2] = z * breathingFactor;
+        }
+        particlesGeometry.attributes.position.needsUpdate = true;
         
         // Rendu
         renderer.render(scene, camera);
@@ -155,15 +202,16 @@ function initPredictionAnimation() {
     // Créer une animation de scanner
     if (window.THREE) {
         // Si Three.js est disponible, créer une animation 3D
-        createScannerAnimation(animationContainer);
+        return createScannerAnimation(animationContainer);
     } else {
         // Sinon, utiliser une animation CSS
         animationContainer.classList.add('pulse-animation');
+        return null;
     }
 }
 
 /**
- * Crée une animation de scanner 3D
+ * Crée une animation de scanner 3D améliorée
  * @param {HTMLElement} container - Le conteneur de l'animation
  */
 function createScannerAnimation(container) {
@@ -174,25 +222,33 @@ function createScannerAnimation(container) {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 1000);
     
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({ 
+        alpha: true, 
+        antialias: true 
+    });
     renderer.setSize(150, 150);
     renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
     container.appendChild(renderer.domElement);
     
     // Créer une sphère avec effet de scanner
-    const geometry = new THREE.SphereGeometry(30, 32, 32);
-    const material = new THREE.MeshBasicMaterial({
+    const geometry = new THREE.SphereGeometry(30, 64, 64); // Plus détaillée
+    
+    // Utiliser un matériau plus avancé pour la sphère
+    const material = new THREE.MeshPhongMaterial({
         color: 0x6366f1,
-        wireframe: false,
         transparent: true,
-        opacity: 0.6
+        opacity: 0.6,
+        specular: 0xffffff,
+        shininess: 100,
+        flatShading: false
     });
     
     const sphere = new THREE.Mesh(geometry, material);
     scene.add(sphere);
     
-    // Ajouter un anneau de scanner
-    const ringGeometry = new THREE.RingGeometry(32, 35, 32);
+    // Ajouter un anneau de scanner avec effet de brillance
+    const ringGeometry = new THREE.RingGeometry(32, 35, 64); // Plus de segments
     const ringMaterial = new THREE.MeshBasicMaterial({
         color: 0xf59e0b,
         side: THREE.DoubleSide,
@@ -203,15 +259,19 @@ function createScannerAnimation(container) {
     const ring = new THREE.Mesh(ringGeometry, ringMaterial);
     scene.add(ring);
     
-    // Ajouter des données flottantes (cubes)
-    const cubes = [];
-    for (let i = 0; i < 20; i++) {
+    // Ajouter des données flottantes avec formes variées
+    const dataObjects = [];
+    
+    // Ajouter quelques cubes
+    for (let i = 0; i < 10; i++) {
         const cubeSize = Math.random() * 3 + 1;
         const cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
-        const cubeMaterial = new THREE.MeshBasicMaterial({
+        const cubeMaterial = new THREE.MeshPhongMaterial({
             color: Math.random() > 0.5 ? 0x6366f1 : 0xf59e0b,
             transparent: true,
-            opacity: 0.7
+            opacity: 0.7,
+            specular: 0xffffff,
+            shininess: 30
         });
         
         const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
@@ -226,7 +286,7 @@ function createScannerAnimation(container) {
         cube.position.z = radius * Math.cos(phi);
         
         scene.add(cube);
-        cubes.push({
+        dataObjects.push({
             mesh: cube,
             rotationSpeed: Math.random() * 0.05,
             moveSpeed: Math.random() * 0.01,
@@ -234,9 +294,92 @@ function createScannerAnimation(container) {
                 Math.random() - 0.5,
                 Math.random() - 0.5,
                 Math.random() - 0.5
-            ]
+            ],
+            initialPosition: [cube.position.x, cube.position.y, cube.position.z]
         });
     }
+    
+    // Ajouter quelques tétraèdres pour plus de variété
+    for (let i = 0; i < 5; i++) {
+        const tetraSize = Math.random() * 4 + 2;
+        const tetraGeometry = new THREE.TetrahedronGeometry(tetraSize);
+        const tetraMaterial = new THREE.MeshPhongMaterial({
+            color: 0x6366f1,
+            transparent: true,
+            opacity: 0.7,
+            specular: 0xffffff,
+            shininess: 30
+        });
+        
+        const tetra = new THREE.Mesh(tetraGeometry, tetraMaterial);
+        
+        // Position aléatoire autour de la sphère
+        const radius = Math.random() * 20 + 40;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI;
+        
+        tetra.position.x = radius * Math.sin(phi) * Math.cos(theta);
+        tetra.position.y = radius * Math.sin(phi) * Math.sin(theta);
+        tetra.position.z = radius * Math.cos(phi);
+        
+        scene.add(tetra);
+        dataObjects.push({
+            mesh: tetra,
+            rotationSpeed: Math.random() * 0.05,
+            moveSpeed: Math.random() * 0.01,
+            direction: [
+                Math.random() - 0.5,
+                Math.random() - 0.5,
+                Math.random() - 0.5
+            ],
+            initialPosition: [tetra.position.x, tetra.position.y, tetra.position.z]
+        });
+    }
+    
+    // Ajouter quelques octaèdres pour encore plus de variété
+    for (let i = 0; i < 5; i++) {
+        const octaSize = Math.random() * 3 + 1.5;
+        const octaGeometry = new THREE.OctahedronGeometry(octaSize);
+        const octaMaterial = new THREE.MeshPhongMaterial({
+            color: 0xf59e0b,
+            transparent: true,
+            opacity: 0.7,
+            specular: 0xffffff,
+            shininess: 30
+        });
+        
+        const octa = new THREE.Mesh(octaGeometry, octaMaterial);
+        
+        // Position aléatoire autour de la sphère
+        const radius = Math.random() * 20 + 40;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI;
+        
+        octa.position.x = radius * Math.sin(phi) * Math.cos(theta);
+        octa.position.y = radius * Math.sin(phi) * Math.sin(theta);
+        octa.position.z = radius * Math.cos(phi);
+        
+        scene.add(octa);
+        dataObjects.push({
+            mesh: octa,
+            rotationSpeed: Math.random() * 0.05,
+            moveSpeed: Math.random() * 0.01,
+            direction: [
+                Math.random() - 0.5,
+                Math.random() - 0.5,
+                Math.random() - 0.5
+            ],
+            initialPosition: [octa.position.x, octa.position.y, octa.position.z]
+        });
+    }
+    
+    // Ajouter de l'éclairage pour les effets 3D
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
     
     // Positionner la caméra
     camera.position.z = 100;
@@ -245,13 +388,23 @@ function createScannerAnimation(container) {
     let animationFrameId;
     let scannerPosition = -40; // Position verticale du scanner
     let scanDirection = 1; // Direction du scanner (montant ou descendant)
+    let time = 0; // Variable de temps pour les animations
     
-    // Fonction d'animation
+    // Fonction d'animation améliorée
     function animate() {
         animationFrameId = requestAnimationFrame(animate);
+        time += 0.01;
         
-        // Animer la sphère
+        // Animer la sphère avec une rotation lente
         sphere.rotation.y += 0.01;
+        sphere.rotation.x += 0.005;
+        
+        // Faire pulser légèrement la sphère
+        const pulseFactor = 1 + Math.sin(time * 2) * 0.05;
+        sphere.scale.set(pulseFactor, pulseFactor, pulseFactor);
+        
+        // Animer l'opacité de la sphère
+        material.opacity = 0.4 + Math.sin(time * 3) * 0.2;
         
         // Animer l'anneau de scanner
         scannerPosition += 0.8 * scanDirection;
@@ -262,34 +415,42 @@ function createScannerAnimation(container) {
         ring.rotation.x = Math.PI / 2; // Horizontal
         ring.rotation.z += 0.02;
         
-        // Animer les cubes de données
-        cubes.forEach(cube => {
-            cube.mesh.rotation.x += cube.rotationSpeed;
-            cube.mesh.rotation.y += cube.rotationSpeed * 0.8;
+        // Faire pulser l'anneau
+        const ringPulse = 1 + Math.sin(time * 4) * 0.1;
+        ring.scale.x = ringPulse;
+        ring.scale.y = ringPulse;
+        
+        // Effet d'opacité pour l'anneau
+        ringMaterial.opacity = 0.6 + Math.sin(time * 5) * 0.2;
+        
+        // Animer les objets de données
+        dataObjects.forEach(obj => {
+            obj.mesh.rotation.x += obj.rotationSpeed;
+            obj.mesh.rotation.y += obj.rotationSpeed * 0.8;
             
-            // Mouvement léger
-            cube.mesh.position.x += cube.direction[0] * cube.moveSpeed;
-            cube.mesh.position.y += cube.direction[1] * cube.moveSpeed;
-            cube.mesh.position.z += cube.direction[2] * cube.moveSpeed;
+            // Mouvement orbital légèrement chaotique
+            const orbitSpeed = 0.01;
+            const originalX = obj.initialPosition[0];
+            const originalY = obj.initialPosition[1];
+            const originalZ = obj.initialPosition[2];
             
-            // Inverser la direction si trop loin
-            const distance = Math.sqrt(
-                Math.pow(cube.mesh.position.x, 2) +
-                Math.pow(cube.mesh.position.y, 2) +
-                Math.pow(cube.mesh.position.z, 2)
-            );
-            
-            if (distance > 70 || distance < 35) {
-                cube.direction[0] *= -1;
-                cube.direction[1] *= -1;
-                cube.direction[2] *= -1;
-            }
+            // Orbite elliptique personnalisée pour chaque objet
+            obj.mesh.position.x = originalX + Math.sin(time * (0.5 + Math.random() * 0.5) + obj.rotationSpeed * 10) * 5;
+            obj.mesh.position.y = originalY + Math.sin(time * (0.3 + Math.random() * 0.5) + obj.rotationSpeed * 20) * 5;
+            obj.mesh.position.z = originalZ + Math.cos(time * (0.4 + Math.random() * 0.5) + obj.rotationSpeed * 15) * 5;
             
             // Effet de scan lorsque l'anneau passe
-            if (Math.abs(cube.mesh.position.y - scannerPosition) < 5) {
-                cube.mesh.material.opacity = 1;
+            const distanceToScanner = Math.abs(obj.mesh.position.y - scannerPosition);
+            if (distanceToScanner < 5) {
+                obj.mesh.material.opacity = 1;
+                // Ajouter un effet de mise à l'échelle
+                obj.mesh.scale.set(1.2, 1.2, 1.2);
+                // Changer temporairement la couleur
+                obj.mesh.material.emissive = new THREE.Color(0x444444);
             } else {
-                cube.mesh.material.opacity = 0.7;
+                obj.mesh.material.opacity = 0.7;
+                obj.mesh.scale.set(1, 1, 1);
+                obj.mesh.material.emissive = new THREE.Color(0x000000);
             }
         });
         
@@ -309,22 +470,59 @@ function createScannerAnimation(container) {
         // Nettoyer les ressources
         scene.remove(sphere);
         scene.remove(ring);
-        cubes.forEach(cube => scene.remove(cube.mesh));
+        scene.remove(ambientLight);
+        scene.remove(directionalLight);
+        
+        dataObjects.forEach(obj => scene.remove(obj.mesh));
         
         geometry.dispose();
         material.dispose();
         ringGeometry.dispose();
         ringMaterial.dispose();
         
-        cubes.forEach(cube => {
-            cube.mesh.geometry.dispose();
-            cube.mesh.material.dispose();
+        dataObjects.forEach(obj => {
+            obj.mesh.geometry.dispose();
+            obj.mesh.material.dispose();
         });
         
         renderer.dispose();
     };
 }
 
-// Rendre les fonctions accessibles globalement
-window.initLogoAnimationEffect = initLogoAnimationEffect;
-window.initPredictionAnimation = initPredictionAnimation;
+// Fonction pour créer une animation d'arrière-plan subtile
+function createBackgroundAnimation() {
+    const container = document.createElement('div');
+    container.className = 'background-animation';
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.zIndex = '-1';
+    container.style.pointerEvents = 'none';
+    
+    // Créer des particules d'arrière-plan
+    for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'bg-particle';
+        
+        // Style des particules
+        particle.style.position = 'absolute';
+        particle.style.width = (3 + Math.random() * 5) + 'px';
+        particle.style.height = particle.style.width;
+        particle.style.borderRadius = '50%';
+        particle.style.opacity = (0.1 + Math.random() * 0.2).toString();
+        
+        // Couleurs aléatoires
+        const colors = ['#6366f1', '#818cf8', '#f59e0b', '#fbbf24'];
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        // Position aléatoire
+        particle.style.left = (Math.random() * 100) + '%';
+        particle.style.top = (Math.random() * 100) + '%';
+        
+        // Animation
+        particle.style.animation = `float ${5 + Math.random() * 10}s infinite ease-in-out`;
+        particle.style.animationDelay = (Math.random() * 5) + 's';
+        
+        container.appendChild(particle);
