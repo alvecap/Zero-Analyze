@@ -7,14 +7,14 @@ import { getAuth, signInAnonymously } from "firebase/auth";
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 
 document.addEventListener('DOMContentLoaded', async function() {
-    // Initialisation de Firebase
+    // Initialisation de Firebase - utilise les variables d'environnement de Render
     const firebaseConfig = {
-        apiKey: process.env.FIREBASE_API_KEY || "AIzaSyAkcvTx6XzD1mFGElcijbwmkIUU5PsuSq0",
-        authDomain: process.env.FIREBASE_AUTH_DOMAIN || "zero-analyze.firebaseapp.com",
-        projectId: process.env.FIREBASE_PROJECT_ID || "zero-analyze",
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "zero-analyze.firebasestorage.app",
-        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "389865928970",
-        appId: process.env.FIREBASE_APP_ID || "1:389865928970:web:8980b69d56bd6ba25622f3"
+        apiKey: process.env.FIREBASE_API_KEY,
+        authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.FIREBASE_APP_ID
     };
 
     let app, db, auth, currentUser;
