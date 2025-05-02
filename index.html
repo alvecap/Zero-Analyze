@@ -13,6 +13,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- THREE.js pour les animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         /* STYLES PRINCIPAUX */
         :root {
@@ -811,15 +813,9 @@
         </nav>
     </div>
 
-    <!-- Scripts de l'application en mode module -->
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="firebase-service.js"></script>
-    <script type="module" src="telegram-auth.js"></script>
-    <script type="module" src="prediction-limits.js"></script>
-    <script type="module" src="app.js"></script>
-    <script type="module" src="profile.js"></script>
-    <script type="module" src="questions.js"></script>
-    <script type="module" src="prediction.js"></script>
-    <script type="module" src="animation.js"></script>
+    <!-- Scripts de l'application -->
+    <script src="animation.js"></script>
+    <script src="prediction.js"></script>
+    <script src="app-fixed.js"></script>
 </body>
 </html>
