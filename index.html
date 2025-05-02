@@ -7,7 +7,12 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>ZERO ANALYZE</title>
+    <!-- Scripts Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Scripts Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
         /* STYLES PRINCIPAUX */
         :root {
@@ -489,6 +494,139 @@
         .question-group:hover {
             transform: translateY(-3px);
         }
+
+        /* STYLES POUR FIREBASE INTEGRATION */
+        .limit-banner-container {
+            margin: 10px auto 20px;
+            max-width: 90%;
+        }
+
+        .limit-banner {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: rgba(99, 102, 241, 0.1);
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .limit-icon {
+            font-size: 20px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .limit-text {
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .limit-text p {
+            margin: 0;
+        }
+
+        .limit-message {
+            text-align: center;
+            padding: 10px;
+            margin: 15px 0;
+            background-color: rgba(99, 102, 241, 0.1);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .limit-message.error {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+
+        /* Styles pour la page profil */
+        .stats-container {
+            margin-top: 20px;
+        }
+
+        .stats-card,
+        .history-card {
+            background-color: rgba(99, 102, 241, 0.05);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 5px;
+        }
+
+        .prediction-history {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+        }
+
+        .history-item {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: var(--text-light);
+            width: 100px;
+            flex-shrink: 0;
+        }
+
+        .history-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .history-score {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .history-result {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        /* Styles pour l'erreur d'authentification */
+        .error-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .error-subtitle {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -506,6 +644,10 @@
             </div>
             <div class="logo">ZERO ANALYZE</div>
             <p class="tagline">Bienvenue dans ZERO ANALYZE. Ici, aucune analyse, aucun doute. Juste les cotes. Juste les chiffres.</p>
+            
+            <!-- Bannière des limites de prédictions -->
+            <div id="limit-banner-container" class="limit-banner-container"></div>
+            
             <button id="start-btn" class="btn">Commencer</button>
             
             <div class="argument-list">
@@ -600,6 +742,9 @@
                     </div>
                 </div>
                 
+                <!-- Message pour les limites de prédictions -->
+                <div id="limit-message" class="limit-message hidden"></div>
+                
                 <button id="new-prediction-btn" class="btn">Nouvelle prédiction</button>
                 <button id="home-btn" class="btn btn-outline">Retour à l'accueil</button>
             </div>
@@ -666,586 +811,15 @@
         </nav>
     </div>
 
-<script>
-// ================== INITIALISATION DE L'APPLICATION ==================
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialisation de Telegram WebApp
-    let tg = window.Telegram?.WebApp;
-    if (tg) {
-        tg.ready();
-        tg.expand();
-        
-        // Configurer le bouton retour
-        tg.BackButton.onClick(function() {
-            goToHomePage();
-        });
-    }
-    
-    // ================== VARIABLES GLOBALES ==================
-    let currentStep = 0;
-    let userAnswers = {};
-    
-    // Configuration des étapes du questionnaire - RÉORGANISÉ selon vos instructions
-    const questionnaireSteps = [
-        {
-            title: "Cotes 1N2 (temps réglementaire)",
-            questions: [
-                { id: "homeWin", label: "Cote pour la victoire de l'équipe à domicile", hint: "Entrer la cote affichée", required: true },
-                { id: "draw", label: "Cote pour un match nul", hint: "Entrer la cote affichée", required: true },
-                { id: "awayWin", label: "Cote pour la victoire de l'équipe à l'extérieur", hint: "Entrer la cote affichée", required: true }
-            ]
-        },
-        {
-            title: "Les deux équipes marquent",
-            questions: [
-                { id: "bttsYes", label: "Cote pour \"Les deux équipes marquent – Oui\"", hint: "Entrer la cote", required: true },
-                { id: "bttsNo", label: "Cote pour \"Les deux équipes marquent – Non\"", hint: "Entrer la cote", required: true }
-            ]
-        },
-        {
-            title: "Total de buts",
-            questions: [
-                { id: "homeOver05", label: "Cote pour que l'équipe à domicile marque plus de 0,5 but", hint: "Entrer la cote", required: true },
-                { id: "homeOver15", label: "Cote pour que l'équipe à domicile marque plus de 1,5 but", hint: "Entrer la cote", required: true },
-                { id: "awayOver05", label: "Cote pour que l'équipe à l'extérieur marque plus de 0,5 but", hint: "Entrer la cote", required: true },
-                { id: "awayOver15", label: "Cote pour que l'équipe à l'extérieur marque plus de 1,5 but", hint: "Entrer la cote", required: true },
-                { id: "totalOver25", label: "Cote pour plus de 2,5 buts dans le match", hint: "Entrer la cote totale", required: true }
-            ]
-        },
-        {
-            title: "Première mi-temps",
-            questions: [
-                { id: "htHomeWin", label: "Cote pour la victoire de l'équipe à domicile en première mi-temps", hint: "Entrer la cote", required: true },
-                { id: "htDraw", label: "Cote pour un match nul à la mi-temps", hint: "Entrer la cote", required: true },
-                { id: "htAwayWin", label: "Cote pour la victoire de l'équipe à l'extérieur en première mi-temps", hint: "Entrer la cote", required: true },
-                { id: "htHomeOver05", label: "Cote pour que l'équipe à domicile marque plus de 0,5 but en première mi-temps", hint: "Entrer la cote", required: true },
-                { id: "htAwayOver05", label: "Cote pour que l'équipe à l'extérieur marque plus de 0,5 but en première mi-temps", hint: "Entrer la cote", required: true }
-            ]
-        },
-        {
-            title: "Deuxième mi-temps",
-            questions: [
-                { id: "ftHomeGoal", label: "Cote pour que l'équipe à domicile marque au moins un but en deuxième mi-temps", hint: "Entrer la cote", required: true },
-                { id: "ftAwayGoal", label: "Cote pour que l'équipe à l'extérieur marque au moins un but en deuxième mi-temps", hint: "Entrer la cote", required: true },
-                { id: "ftOver15", label: "Cote pour plus de 1,5 but en deuxième mi-temps", hint: "Entrer la cote s'il y a", required: true }
-            ]
-        },
-        {
-            title: "Handicap",
-            questions: [
-                { id: "homeHandicapMinus1", label: "Cote pour l'équipe à domicile avec un handicap de -1 but", hint: "Entrer la cote si disponible", required: false },
-                { id: "homeHandicapPlus1", label: "Cote pour l'équipe à domicile avec un handicap de +1 but", hint: "Entrer la cote si disponible", required: false },
-                { id: "awayHandicapMinus1", label: "Cote pour l'équipe à l'extérieur avec un handicap de -1 but", hint: "Entrer la cote si disponible", required: false },
-                { id: "awayHandicapPlus1", label: "Cote pour l'équipe à l'extérieur avec un handicap de +1 but", hint: "Entrer la cote si disponible", required: false }
-            ],
-            specialMessage: "Option non disponible ? Laissez vide. Cela sera pris en compte dans l'analyse."
-        }
-    ];
-
-    // ================== ÉLÉMENTS DU DOM ==================
-    const pages = document.querySelectorAll('.page');
-    const startBtn = document.getElementById('start-btn');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-    const homeBtn = document.getElementById('home-btn');
-    const newPredictionBtn = document.getElementById('new-prediction-btn');
-    const progressBar = document.getElementById('progress-bar');
-    const stepTitle = document.getElementById('step-title');
-    const stepIndicators = document.getElementById('step-indicators');
-    const questionsContainer = document.getElementById('questions-container');
-    const navHome = document.getElementById('nav-home');
-    const navServices = document.getElementById('nav-services');
-    const navProfile = document.getElementById('nav-profile');
-    
-    // ================== NAVIGATION ==================
-    function navigateTo(pageId) {
-        // Masquer toutes les pages
-        pages.forEach(page => page.classList.remove('active'));
-        
-        // Afficher la page demandée
-        document.getElementById(pageId).classList.add('active');
-        
-        // Mettre à jour la navigation
-        navHome.classList.remove('active');
-        navServices.classList.remove('active');
-        navProfile.classList.remove('active');
-        
-        if (pageId === 'home') navHome.classList.add('active');
-        else if (pageId === 'services') navServices.classList.add('active');
-        else if (pageId === 'profile') navProfile.classList.add('active');
-        
-        // Faire défiler vers le haut
-        window.scrollTo(0, 0);
-        
-        // Telegram BackButton
-        if (tg && tg.BackButton) {
-            if (pageId === 'home') {
-                tg.BackButton.hide();
-            } else {
-                tg.BackButton.show();
-            }
-        }
-    }
-
-    // ================== FONCTIONS DU QUESTIONNAIRE ==================
-    function resetQuestionnaire() {
-        currentStep = 0;
-        userAnswers = {};
-        generateStepIndicators();
-        loadCurrentStep();
-    }
-    
-    function generateStepIndicators() {
-        stepIndicators.innerHTML = '';
-        
-        questionnaireSteps.forEach((step, index) => {
-            const indicator = document.createElement('div');
-            indicator.className = 'step' + (index === 0 ? ' active' : '');
-            stepIndicators.appendChild(indicator);
-        });
-    }
-    
-    function loadCurrentStep() {
-        const step = questionnaireSteps[currentStep];
-        
-        // Mettre à jour le titre
-        stepTitle.textContent = step.title;
-        
-        // Vider le conteneur
-        questionsContainer.innerHTML = '';
-        
-        // Ajouter les questions
-        step.questions.forEach(question => {
-            const questionGroup = document.createElement('div');
-            questionGroup.className = 'question-group';
-            
-            const label = document.createElement('label');
-            label.className = 'question-label';
-            label.htmlFor = question.id;
-            label.textContent = question.label;
-            
-            const hint = document.createElement('div');
-            hint.className = 'question-hint';
-            hint.textContent = question.hint;
-            
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.id = question.id;
-            input.step = '0.01';
-            input.min = '1';
-            
-            // Restaurer la valeur si déjà répondue
-            if (userAnswers[question.id]) {
-                input.value = userAnswers[question.id];
-            }
-            
-            questionGroup.appendChild(label);
-            questionGroup.appendChild(hint);
-            questionGroup.appendChild(input);
-            questionsContainer.appendChild(questionGroup);
-        });
-        
-        // Ajouter le message spécial si nécessaire
-        if (step.specialMessage) {
-            const message = document.createElement('p');
-            message.className = 'centered';
-            message.style.fontSize = '14px';
-            message.style.color = 'var(--text-light)';
-            message.style.marginTop = '10px';
-            message.textContent = step.specialMessage;
-            questionsContainer.appendChild(message);
-        }
-        
-        // Mettre à jour la progression
-        const progress = (currentStep / (questionnaireSteps.length - 1)) * 100;
-        progressBar.style.width = `${progress}%`;
-        
-        // Mettre à jour les indicateurs
-        const indicators = stepIndicators.querySelectorAll('.step');
-        indicators.forEach((indicator, index) => {
-            indicator.classList.toggle('active', index === currentStep);
-        });
-        
-        // Mettre à jour les boutons
-        prevBtn.style.visibility = currentStep === 0 ? 'hidden' : 'visible';
-        nextBtn.textContent = currentStep === questionnaireSteps.length - 1 ? 'Obtenir la prédiction' : 'Suivant';
-    }
-    
-    function saveCurrentStepAnswers() {
-        const step = questionnaireSteps[currentStep];
-        let isValid = true;
-        
-        // Vérifier chaque question
-        step.questions.forEach(question => {
-            const input = document.getElementById(question.id);
-            const value = input.value.trim();
-            
-            // Validation
-            if (question.required && value === '') {
-                showError('Ce champ est obligatoire', input);
-                isValid = false;
-            } else if (value !== '' && (isNaN(value) || parseFloat(value) < 1)) {
-                showError('Entrez une cote valide (≥ 1)', input);
-                isValid = false;
-            }
-            
-            // Sauvegarder si valide
-            if (value !== '') {
-                userAnswers[question.id] = parseFloat(value);
-            }
-        });
-        
-        return isValid;
-    }
-    
-    function showError(message, element) {
-        // Ajouter la classe d'erreur
-        element.classList.add('input-error');
-        
-        // Créer le message d'erreur s'il n'existe pas déjà
-        let errorElement = element.nextElementSibling;
-        if (!errorElement || !errorElement.classList.contains('error-message')) {
-            errorElement = document.createElement('div');
-            errorElement.className = 'error-message';
-            element.parentNode.insertBefore(errorElement, element.nextSibling);
-        }
-        
-        errorElement.textContent = message;
-        
-        // Supprimer après un délai
-        setTimeout(() => {
-            element.classList.remove('input-error');
-            if (errorElement.parentNode) {
-                errorElement.parentNode.removeChild(errorElement);
-            }
-        }, 3000);
-    }
-    
-    function prevStep() {
-        if (currentStep > 0) {
-            currentStep--;
-            loadCurrentStep();
-        }
-    }
-    
-    function nextStep() {
-        if (saveCurrentStepAnswers()) {
-            if (currentStep === questionnaireSteps.length - 1) {
-                showResults();
-            } else {
-                currentStep++;
-                loadCurrentStep();
-            }
-        }
-    }
-    
-    // ================== FONCTIONS DE PRÉDICTION ==================
-    function showResults() {
-        // Naviguer vers la page de résultats
-        navigateTo('results');
-        
-        // Afficher le chargement
-        document.getElementById('loading').classList.remove('hidden');
-        document.getElementById('prediction-results').classList.add('hidden');
-        
-        // Attendre pour simuler le traitement
-        setTimeout(() => {
-            // Générer la prédiction
-            const prediction = generatePrediction();
-            
-            // Afficher les résultats
-            document.getElementById('score-1').textContent = prediction.scoreExact1;
-            document.getElementById('score-2').textContent = prediction.scoreExact2;
-            document.getElementById('match-result').textContent = prediction.matchResult;
-            document.getElementById('goals-prediction').textContent = prediction.goalsPrediction;
-            
-            // Générer des pourcentages de confiance aléatoires entre 95% et 99%
-            const scoreConfidence = Math.floor(Math.random() * 5) + 95;
-            const resultConfidence = Math.floor(Math.random() * 5) + 95;
-            const goalsConfidence = Math.floor(Math.random() * 5) + 95;
-            
-            document.getElementById('score-confidence').textContent = `Confiance ${scoreConfidence}%`;
-            document.getElementById('result-confidence').textContent = `Confiance ${resultConfidence}%`;
-            document.getElementById('goals-confidence').textContent = `Confiance ${goalsConfidence}%`;
-            
-            // Masquer le chargement et afficher les résultats
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('prediction-results').classList.remove('hidden');
-        }, 3000);
-    }
-    
-    function generatePrediction() {
-        // Analyser les données
-        const favoriteAnalysis = analyzeFavorite();
-        const goalsAnalysis = analyzeGoals();
-        const bttsAnalysis = analyzeBTTS();
-        
-        // Générer les scores
-        const scores = generateScores(favoriteAnalysis, goalsAnalysis, bttsAnalysis);
-        
-        return {
-            scoreExact1: scores.score1,
-            scoreExact2: scores.score2,
-            matchResult: determineMatchResult(favoriteAnalysis),
-            goalsPrediction: determineGoalsPrediction(scores)
-        };
-    }
-    
-    function analyzeFavorite() {
-        const homeWinOdds = userAnswers.homeWin || 0;
-        const drawOdds = userAnswers.draw || 0;
-        const awayWinOdds = userAnswers.awayWin || 0;
-        
-        // Plus la cote est basse, plus l'équipe est favorite
-        let favorite = 'draw';
-        let favoriteOdds = drawOdds;
-        
-        if (homeWinOdds > 0 && homeWinOdds < favoriteOdds) {
-            favorite = 'home';
-            favoriteOdds = homeWinOdds;
-        }
-        
-        if (awayWinOdds > 0 && awayWinOdds < favoriteOdds) {
-            favorite = 'away';
-            favoriteOdds = awayWinOdds;
-        }
-        
-        return {
-            favorite,
-            favoriteOdds,
-            isStrongFavorite: favoriteOdds < 1.8
-        };
-    }
-    
-    function analyzeGoals() {
-        const homeOver05 = userAnswers.homeOver05 || 0;
-        const homeOver15 = userAnswers.homeOver15 || 0;
-        const awayOver05 = userAnswers.awayOver05 || 0;
-        const awayOver15 = userAnswers.awayOver15 || 0;
-        const totalOver25 = userAnswers.totalOver25 || 0;
-        
-        const homeScore = homeOver05 && homeOver15 ? (2.5 - (homeOver05 / homeOver15) / 2) : 1;
-        const awayScore = awayOver05 && awayOver15 ? (2.5 - (awayOver05 / awayOver15) / 2) : 1;
-        return {
-            expectedHomeGoals: Math.min(Math.max(homeScore, 0), 3),
-            expectedAwayGoals: Math.min(Math.max(awayScore, 0), 3),
-            highScoring: totalOver25 < 1.8,
-            lowScoring: totalOver25 > 2.5
-        };
-    }
-    
-    function analyzeBTTS() {
-        const bttsYes = userAnswers.bttsYes || 0;
-        const bttsNo = userAnswers.bttsNo || 0;
-        
-        if (bttsYes && bttsNo) {
-            return {
-                bothTeamsToScore: bttsYes < bttsNo,
-                strongBTTS: bttsYes < 1.8
-            };
-        }
-        
-        return {
-            bothTeamsToScore: 
-                (userAnswers.homeOver05 < 1.8) && 
-                (userAnswers.awayOver05 < 1.8),
-            strongBTTS: false
-        };
-    }
-    
-    function generateScores(favoriteAnalysis, goalsAnalysis, bttsAnalysis) {
-        let homeScore1 = 1;
-        let awayScore1 = 1;
-        let homeScore2 = 1;
-        let awayScore2 = 0;
-        
-        if (favoriteAnalysis.favorite === 'home') {
-            if (favoriteAnalysis.isStrongFavorite) {
-                homeScore1 = Math.min(Math.round(goalsAnalysis.expectedHomeGoals), 3);
-                awayScore1 = bttsAnalysis.bothTeamsToScore ? 1 : 0;
-                
-                homeScore2 = Math.min(Math.round(goalsAnalysis.expectedHomeGoals + 0.5), 4);
-                awayScore2 = bttsAnalysis.bothTeamsToScore ? 1 : 0;
-            } else {
-                homeScore1 = 1;
-                awayScore1 = 0;
-                
-                homeScore2 = 2;
-                awayScore2 = bttsAnalysis.bothTeamsToScore ? 1 : 0;
-            }
-        } else if (favoriteAnalysis.favorite === 'away') {
-            if (favoriteAnalysis.isStrongFavorite) {
-                homeScore1 = bttsAnalysis.bothTeamsToScore ? 1 : 0;
-                awayScore1 = Math.min(Math.round(goalsAnalysis.expectedAwayGoals), 3);
-                
-                homeScore2 = bttsAnalysis.bothTeamsToScore ? 1 : 0;
-                awayScore2 = Math.min(Math.round(goalsAnalysis.expectedAwayGoals + 0.5), 4);
-            } else {
-                homeScore1 = 0;
-                awayScore1 = 1;
-                
-                homeScore2 = bttsAnalysis.bothTeamsToScore ? 1 : 0;
-                awayScore2 = 2;
-            }
-        } else {
-            if (bttsAnalysis.bothTeamsToScore) {
-                homeScore1 = 1;
-                awayScore1 = 1;
-                
-                if (goalsAnalysis.lowScoring) {
-                    homeScore2 = 0;
-                    awayScore2 = 0;
-                } else {
-                    homeScore2 = 2;
-                    awayScore2 = 2;
-                }
-            } else {
-                homeScore1 = 0;
-                awayScore1 = 0;
-                
-                homeScore2 = 1;
-                awayScore2 = 1;
-            }
-        }
-        
-        // S'assurer que les scores sont différents
-        if (homeScore1 === homeScore2 && awayScore1 === awayScore2) {
-            if (Math.random() > 0.5) {
-                homeScore2 += 1;
-            } else {
-                awayScore2 += 1;
-            }
-        }
-        
-        return {
-            score1: `${homeScore1}-${awayScore1}`,
-            score2: `${homeScore2}-${awayScore2}`
-        };
-    }
-    
-    function determineMatchResult(favoriteAnalysis) {
-        if (favoriteAnalysis.favorite === 'draw') {
-            return 'Match nul';
-        }
-        
-        if (!favoriteAnalysis.isStrongFavorite) {
-            if (favoriteAnalysis.favorite === 'home') {
-                return 'Double chance: 1X (domicile ou nul)';
-            } else {
-                return 'Double chance: X2 (nul ou extérieur)';
-            }
-        } else {
-            if (favoriteAnalysis.favorite === 'home') {
-                return 'Victoire domicile';
-            } else {
-                return 'Victoire extérieur';
-            }
-        }
-    }
-    
-    function determineGoalsPrediction(scores) {
-        const score1Parts = scores.score1.split('-');
-        const score2Parts = scores.score2.split('-');
-        
-        const totalGoals1 = parseInt(score1Parts[0]) + parseInt(score1Parts[1]);
-        const totalGoals2 = parseInt(score2Parts[0]) + parseInt(score2Parts[1]);
-        
-        const maxTotalGoals = Math.max(totalGoals1, totalGoals2);
-        
-        if (maxTotalGoals <= 2) {
-            return 'Moins de 3,5 buts';
-        } else if (maxTotalGoals === 3) {
-            return 'Plus de 1,5 buts';
-        } else {
-            return 'Plus de 2,5 buts';
-        }
-    }
-    
-    // ================== PROFIL UTILISATEUR ==================
-    function loadUserProfile() {
-        const profileContent = document.getElementById('profile-content');
-        
-        if (tg && tg.initDataUnsafe?.user) {
-            const user = tg.initDataUnsafe.user;
-            
-            profileContent.innerHTML = `
-                <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                    <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin-right: 15px; box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);">
-                        ${user.first_name ? user.first_name.charAt(0) : '?'}${user.last_name ? user.last_name.charAt(0) : ''}
-                    </div>
-                    <div>
-                        <h3 style="margin: 0 0 5px 0;">${user.first_name || ''} ${user.last_name || ''}</h3>
-                        <p style="margin: 0; color: var(--text-light);">@${user.username || 'inconnu'}</p>
-                    </div>
-                </div>
-                <p>Bienvenue dans ZERO ANALYZE, votre application de prédiction sportive basée uniquement sur les cotes.</p>
-                <p>Vos prédictions sont générées automatiquement grâce à nos algorithmes avancés d'analyse des cotes.</p>
-                <p>Aucune analyse statistique, aucune étude de forme - uniquement la lecture des cotes proposées par les bookmakers.</p>
-            `;
-        } else {
-            profileContent.innerHTML = `
-                <p class="centered">Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
-            `;
-        }
-    }
-    
-    // ================== FONCTIONS UTILITAIRES ==================
-    function goToHomePage() {
-        navigateTo('home');
-    }
-    
-    // ================== ÉVÉNEMENTS ==================
-    // Bouton Commencer
-    startBtn.addEventListener('click', function() {
-        resetQuestionnaire();
-        navigateTo('questionnaire');
-    });
-    
-    // Navigation du questionnaire
-    prevBtn.addEventListener('click', prevStep);
-    nextBtn.addEventListener('click', nextStep);
-    
-    // Boutons des résultats
-    homeBtn.addEventListener('click', goToHomePage);
-    newPredictionBtn.addEventListener('click', function() {
-        resetQuestionnaire();
-        navigateTo('questionnaire');
-    });
-    
-    // Navigation principale
-    navHome.addEventListener('click', function() {
-        navigateTo('home');
-    });
-    
-    navServices.addEventListener('click', function() {
-        navigateTo('services');
-    });
-    
-    navProfile.addEventListener('click', function() {
-        navigateTo('profile');
-        loadUserProfile();
-    });
-    
-    // Boutons des services
-    document.querySelectorAll('.service-info-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            alert('Aperçu du service: ' + this.dataset.service);
-        });
-    });
-    
-    document.querySelectorAll('.service-contact-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            alert('Contact pour le service: ' + this.dataset.service);
-        });
-    });
-    
-    // ================== INITIALISATION ==================
-    // Générer les indicateurs d'étapes
-    generateStepIndicators();
-    
-    // Charger le profil utilisateur
-    loadUserProfile();
-});
-</script>
+    <!-- Scripts de l'application en mode module -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="firebase-service.js"></script>
+    <script type="module" src="telegram-auth.js"></script>
+    <script type="module" src="prediction-limits.js"></script>
+    <script type="module" src="app.js"></script>
+    <script type="module" src="profile.js"></script>
+    <script type="module" src="questions.js"></script>
+    <script type="module" src="prediction.js"></script>
+    <script type="module" src="animation.js"></script>
 </body>
 </html>
