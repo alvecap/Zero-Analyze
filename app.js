@@ -1,6 +1,8 @@
-// app.js - Logique principale pour Telegram WebApp avec intégration Firebase
+// app-corrected.js - Logique principale optimisée pour Telegram WebApp avec intégration Firebase
+// Version corrigée pour résoudre les problèmes de boutons non fonctionnels
 
-document.addEventListener('DOMContentLoaded', async function() {
+// Attendre que le document soit complètement chargé
+document.addEventListener('DOMContentLoaded', function() {
     console.log("Application initialisée");
     
     // Initialisation de Firebase - utilise les variables d'environnement de Render
@@ -14,17 +16,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     };
 
     let app, db, auth, currentUser;
+    
+    // Partie 1: Initialisation de Firebase
     try {
-        // Initialisation de Firebase avec compatibilité
-        app = firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-        auth = firebase.auth();
-        console.log("Firebase initialisé avec succès");
+        if (firebase) {
+            app = firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            auth = firebase.auth();
+            console.log("Firebase initialisé avec succès");
+        }
     } catch (error) {
         console.error("Erreur lors de l'initialisation de Firebase:", error);
     }
 
-    // Initialisation de l'application Telegram WebApp
+    // Partie 2: Initialisation de Telegram WebApp
     let telegramApp;
     try {
         telegramApp = window.Telegram?.WebApp;
@@ -43,83 +48,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 document.documentElement.style.setProperty('--tg-theme-hint-color', telegramApp.themeParams.hint_color || '#999999');
                 document.documentElement.style.setProperty('--tg-theme-link-color', telegramApp.themeParams.link_color || '#2481cc');
             }
-            
-            // Authentification de l'utilisateur Telegram
-            if (telegramApp.initDataUnsafe?.user) {
-                try {
-                    // Authentifier l'utilisateur de manière anonyme
-                    await auth.signInAnonymously();
-                    
-                    // Vérifier/créer l'utilisateur dans Firestore
-                    currentUser = await checkOrCreateUser(db, telegramApp.initDataUnsafe.user);
-                    console.log("Utilisateur authentifié:", currentUser);
-                } catch (authError) {
-                    console.error("Erreur d'authentification:", authError);
-                }
-            }
         }
     } catch (error) {
         console.error('Telegram WebApp non disponible:', error);
     }
 
-    // Authentification et gestion des utilisateurs Firebase
-    async function checkOrCreateUser(db, telegramUser) {
-        if (!telegramUser || !telegramUser.id) {
-            console.error("Données utilisateur Telegram manquantes");
-            return null;
-        }
-        
-        try {
-            const telegramId = telegramUser.id.toString();
-            
-            // Chercher l'utilisateur par son ID Telegram
-            const usersRef = db.collection('users');
-            const q = usersRef.where('telegramId', '==', telegramId);
-            const querySnapshot = await q.get();
-            
-            // Si l'utilisateur existe, retourner ses données
-            if (!querySnapshot.empty) {
-                const userDoc = querySnapshot.docs[0];
-                const userData = userDoc.data();
-                
-                // Mise à jour de la date de dernier accès
-                await userDoc.ref.update({
-                    lastAccessedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                return {
-                    id: userDoc.id,
-                    ...userData
-                };
-            }
-            
-            // Si l'utilisateur n'existe pas, le créer
-            const isAdmin = telegramId === process.env.ADMIN_TELEGRAM_ID;
-            const newUser = {
-                telegramId: telegramId,
-                username: telegramUser.username || '',
-                firstName: telegramUser.first_name || '',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                dailyLimit: 6,  // Limite modifiée à 6 comme demandé
-                usageCount: 0,
-                lastResetDate: firebase.firestore.FieldValue.serverTimestamp(),
-                isAdmin: isAdmin,
-                isPremium: false,
-                premiumExpiry: null,
-                lastAccessedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            
-            const docRef = await usersRef.add(newUser);
-            return {
-                id: docRef.id,
-                ...newUser
-            };
-        } catch (error) {
-            console.error("Erreur lors de la vérification/création de l'utilisateur:", error);
-            return null;
-        }
-    }
-
+    // Partie 3: Configuration des événements de base
+    // IMPORTANT: Nous utilisons onclick au lieu de addEventListener pour éviter les conflits
+    
     // Éléments du DOM
     const pages = document.querySelectorAll('.page');
     const navButtons = document.querySelectorAll('.nav-item');
@@ -131,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Configuration de la navigation principale
     function navigateTo(pageId, direction = 'forward') {
-        console.log("Navigation vers:", pageId); // Debugging
+        console.log("Navigation vers:", pageId);
         
         // Masquer toutes les pages
         pages.forEach(page => {
@@ -188,44 +124,172 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Initialisation des événements de navigation
     navButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.onclick = function() {
             const pageId = this.id.replace('nav-', '');
             navigateTo(pageId);
-        });
+        };
     });
 
     // Bouton de démarrage
     if (startButton) {
-        startButton.addEventListener('click', function() {
-            console.log("Bouton démarrer cliqué"); // Debugging
+        startButton.onclick = function() {
+            console.log("Bouton démarrer cliqué");
             // Commencer le questionnaire
             if (window.resetQuestionnaire) {
                 window.resetQuestionnaire();
             }
             navigateTo('questionnaire');
-        });
+        };
     }
 
     // Bouton retour à l'accueil depuis les résultats
     if (homeButton) {
-        homeButton.addEventListener('click', function() {
-            console.log("Bouton accueil cliqué"); // Debugging
+        homeButton.onclick = function() {
+            console.log("Bouton accueil cliqué");
             navigateTo('home');
-        });
+        };
     }
 
     // Bouton nouvelle prédiction
     if (newPredictionButton) {
-        newPredictionButton.addEventListener('click', function() {
-            console.log("Bouton nouvelle prédiction cliqué"); // Debugging
+        newPredictionButton.onclick = function() {
+            console.log("Bouton nouvelle prédiction cliqué");
             if (window.resetQuestionnaire) {
                 window.resetQuestionnaire();
             }
             navigateTo('questionnaire');
-        });
+        };
     }
 
-    // Vérification des limites d'utilisation et affichage
+    // Boutons de navigation du questionnaire
+    if (prevButton) {
+        prevButton.onclick = function() {
+            console.log("Bouton précédent cliqué");
+            if (window.navigateToPreviousStep) {
+                window.navigateToPreviousStep();
+            }
+        };
+    }
+    
+    if (nextButton) {
+        nextButton.onclick = function() {
+            console.log("Bouton suivant cliqué");
+            if (window.navigateToNextStep) {
+                window.navigateToNextStep();
+            }
+        };
+    }
+
+    // Événements pour les services
+    document.querySelectorAll('.service-info-btn').forEach(btn => {
+        btn.onclick = function() {
+            const serviceId = this.getAttribute('data-service');
+            if (window.showServiceDetails) {
+                window.showServiceDetails(serviceId);
+            } else {
+                alert("Information sur le service: " + serviceId);
+            }
+        };
+    });
+    
+    document.querySelectorAll('.service-contact-btn').forEach(btn => {
+        btn.onclick = function() {
+            const serviceId = this.getAttribute('data-service');
+            if (window.showContactForm) {
+                window.showContactForm(serviceId);
+            } else {
+                alert("Contact pour le service: " + serviceId);
+            }
+        };
+    });
+
+    // Partie 4: Fonctions pour Firebase
+    // Ces fonctions seront exécutées après l'authentification de l'utilisateur
+
+    // Authentification utilisateur via Telegram
+    async function authenticateUser() {
+        if (!telegramApp || !telegramApp.initDataUnsafe?.user || !auth || !db) {
+            console.error("Données nécessaires à l'authentification manquantes");
+            return null;
+        }
+        
+        try {
+            // Authentifier l'utilisateur de manière anonyme
+            await auth.signInAnonymously();
+            
+            // Vérifier/créer l'utilisateur dans Firestore
+            currentUser = await checkOrCreateUser(telegramApp.initDataUnsafe.user);
+            console.log("Utilisateur authentifié:", currentUser);
+            
+            // Vérifier les limites d'utilisation
+            checkUserLimits();
+            
+            return currentUser;
+        } catch (authError) {
+            console.error("Erreur d'authentification:", authError);
+            return null;
+        }
+    }
+
+    // Vérification ou création de l'utilisateur dans Firestore
+    async function checkOrCreateUser(telegramUser) {
+        if (!telegramUser || !telegramUser.id || !db) {
+            console.error("Données utilisateur ou Firestore manquantes");
+            return null;
+        }
+        
+        try {
+            const telegramId = telegramUser.id.toString();
+            
+            // Chercher l'utilisateur par son ID Telegram
+            const usersRef = db.collection('users');
+            const q = usersRef.where('telegramId', '==', telegramId);
+            const querySnapshot = await q.get();
+            
+            // Si l'utilisateur existe, retourner ses données
+            if (!querySnapshot.empty) {
+                const userDoc = querySnapshot.docs[0];
+                const userData = userDoc.data();
+                
+                // Mise à jour de la date de dernier accès
+                await userDoc.ref.update({
+                    lastAccessedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                return {
+                    id: userDoc.id,
+                    ...userData
+                };
+            }
+            
+            // Si l'utilisateur n'existe pas, le créer
+            const isAdmin = telegramId === process.env.ADMIN_TELEGRAM_ID;
+            const newUser = {
+                telegramId: telegramId,
+                username: telegramUser.username || '',
+                firstName: telegramUser.first_name || '',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                dailyLimit: 6,  // Limite modifiée à 6 comme demandé
+                usageCount: 0,
+                lastResetDate: firebase.firestore.FieldValue.serverTimestamp(),
+                isAdmin: isAdmin,
+                isPremium: false,
+                premiumExpiry: null,
+                lastAccessedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            const docRef = await usersRef.add(newUser);
+            return {
+                id: docRef.id,
+                ...newUser
+            };
+        } catch (error) {
+            console.error("Erreur lors de la vérification/création de l'utilisateur:", error);
+            return null;
+        }
+    }
+
+    // Vérification des limites d'utilisation
     async function checkUserLimits() {
         if (!db || !currentUser || !currentUser.telegramId) return;
         
@@ -252,7 +316,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Afficher les informations de limite
+    // Affichage des informations de limite
     function displayLimitInfo(limitInfo) {
         // Créer ou mettre à jour l'élément d'information
         let infoElement = document.getElementById('limit-info');
@@ -326,19 +390,82 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Initialisation de l'application
-    function initApp() {
-        // Vérifier les limites d'utilisation
-        checkUserLimits();
+    // Incrémenter le compteur d'utilisation dans Firebase
+    async function incrementUsageCount(userId, predictionDetails) {
+        if (!db) return;
         
-        // Préchargement des services
-        if (window.loadServices) {
-            window.loadServices();
+        try {
+            // Récupérer la référence de l'utilisateur
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+            
+            if (!userDoc.exists) {
+                console.error("Utilisateur non trouvé");
+                return;
+            }
+            
+            const userData = userDoc.data();
+            
+            // Vérifier si la limite est atteinte pour les non-premium
+            if (!userData.isPremium && userData.usageCount >= userData.dailyLimit) {
+                showLimitReachedMessage();
+                return;
+            }
+            
+            // Mettre à jour le compteur
+            await userRef.update({
+                usageCount: (userData.usageCount || 0) + 1,
+                lastPredictionAt: firebase.firestore.FieldValue.serverTimestamp(),
+                totalPredictionsCount: (userData.totalPredictionsCount || 0) + 1
+            });
+            
+            // Enregistrer les détails de la prédiction
+            await db.collection('predictions').add({
+                userId: userId,
+                telegramId: userData.telegramId,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                details: predictionDetails
+            });
+            
+            // Mettre à jour l'affichage des limites
+            checkUserLimits();
+        } catch (error) {
+            console.error("Erreur lors de l'incrémentation du compteur:", error);
+        }
+    }
+    
+    // Afficher un message lorsque la limite est atteinte
+    function showLimitReachedMessage() {
+        // Créer le modal de limite atteinte
+        const modal = document.createElement('div');
+        modal.className = 'limit-modal';
+        modal.innerHTML = `
+            <div class="limit-modal-content">
+                <h3>Limite atteinte</h3>
+                <p>Vous avez atteint votre limite quotidienne de prédictions gratuites.</p>
+                <p>Revenez demain ou passez à la version premium pour des prédictions illimitées.</p>
+                <button id="close-limit-modal" class="primary-btn">Fermer</button>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Fermer le modal
+        document.getElementById('close-limit-modal').onclick = function() {
+            document.body.removeChild(modal);
+        };
+    }
+
+    // Partie 5: Initialisation de l'application
+    function initApp() {
+        // Vérifier si l'authentification utilisateur est possible
+        if (telegramApp && telegramApp.initDataUnsafe?.user && auth && db) {
+            authenticateUser();
         }
         
-        // Associer les fonctions au contexte global
+        // Exposer les fonctions nécessaires au contexte global
         window.zeroAnalyzeApp = {
-            navigateTo,
+            navigateTo: navigateTo,
             
             showResults: function(results) {
                 // Afficher la page de résultats avec animation
@@ -408,121 +535,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
         };
-    }
-    
-    // Incrémenter le compteur d'utilisation dans Firebase
-    async function incrementUsageCount(userId, predictionDetails) {
-        if (!db) return;
         
-        try {
-            // Récupérer la référence de l'utilisateur
-            const userRef = db.collection('users').doc(userId);
-            const userDoc = await userRef.get();
-            
-            if (!userDoc.exists) {
-                console.error("Utilisateur non trouvé");
-                return;
-            }
-            
-            const userData = userDoc.data();
-            
-            // Vérifier si la limite est atteinte pour les non-premium
-            if (!userData.isPremium && userData.usageCount >= userData.dailyLimit) {
-                showLimitReachedMessage();
-                return;
-            }
-            
-            // Mettre à jour le compteur
-            await userRef.update({
-                usageCount: (userData.usageCount || 0) + 1,
-                lastPredictionAt: firebase.firestore.FieldValue.serverTimestamp(),
-                totalPredictionsCount: (userData.totalPredictionsCount || 0) + 1
-            });
-            
-            // Enregistrer les détails de la prédiction
-            await db.collection('predictions').add({
-                userId: userId,
-                telegramId: userData.telegramId,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                details: predictionDetails
-            });
-            
-            // Mettre à jour l'affichage des limites
-            checkUserLimits();
-        } catch (error) {
-            console.error("Erreur lors de l'incrémentation du compteur:", error);
-        }
+        // Exposer d'autres fonctions utiles au contexte global
+        window.loadUserProfile = loadUserProfile;
     }
-    
-    // Afficher un message lorsque la limite est atteinte
-    function showLimitReachedMessage() {
-        // Créer le modal de limite atteinte
-        const modal = document.createElement('div');
-        modal.className = 'limit-modal';
-        modal.innerHTML = `
-            <div class="limit-modal-content">
-                <h3>Limite atteinte</h3>
-                <p>Vous avez atteint votre limite quotidienne de prédictions gratuites.</p>
-                <p>Revenez demain ou passez à la version premium pour des prédictions illimitées.</p>
-                <button id="close-limit-modal" class="primary-btn">Fermer</button>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        // Fermer le modal
-        document.getElementById('close-limit-modal').addEventListener('click', function() {
-            document.body.removeChild(modal);
-        });
-    }
-    
-    // Boutons de navigation du questionnaire
-    if (prevButton) {
-        prevButton.addEventListener('click', function() {
-            console.log("Bouton précédent cliqué"); // Debugging
-            if (window.navigateToPreviousStep) {
-                window.navigateToPreviousStep();
-            }
-        });
-    }
-    
-    if (nextButton) {
-        nextButton.addEventListener('click', function() {
-            console.log("Bouton suivant cliqué"); // Debugging
-            if (window.navigateToNextStep) {
-                window.navigateToNextStep();
-            }
-        });
-    }
-    
-    // Événements pour les services
-    document.querySelectorAll('.service-info-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const serviceId = this.getAttribute('data-service');
-            if (window.showServiceDetails) {
-                window.showServiceDetails(serviceId);
-            } else {
-                alert("Information sur le service: " + serviceId);
-            }
-        });
-    });
-    
-    document.querySelectorAll('.service-contact-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const serviceId = this.getAttribute('data-service');
-            if (window.showContactForm) {
-                window.showContactForm(serviceId);
-            } else {
-                alert("Contact pour le service: " + serviceId);
-            }
-        });
-    });
     
     // Initialiser l'application
     initApp();
-    
-    // Exposer les fonctions nécessaires au contexte global
-    window.loadUserProfile = loadUserProfile;
     
     // Événements pour debug Telegram WebApp
     if (telegramApp) {
