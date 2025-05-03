@@ -1,0 +1,209 @@
+/* HOME.CSS - Styles pour la page d'accueil */
+
+#home {
+    text-align: center;
+    padding-top: 40px;
+}
+
+.logo {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 15px 0;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.logo-container {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 8px 20px rgba(99, 102, 241, 0.3));
+    animation: float 3s ease-in-out infinite;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    padding: 10px;
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.tagline {
+    font-size: 16px;
+    color: var(--text-light);
+    max-width: 90%;
+    margin: 0 auto 40px;
+    line-height: 1.7;
+}
+
+/* ANIMATIONS POUR LES EMOJIS 3D */
+@keyframes float-icon {
+    0%, 100% { transform: translateY(0) rotateY(0deg); }
+    50% { transform: translateY(-5px) rotateY(10deg); }
+}
+
+@keyframes pulse-3d {
+    0% { transform: scale3d(1, 1, 1) rotateY(0); }
+    100% { transform: scale3d(1.2, 1.2, 1.2) rotateY(15deg); }
+}
+
+/* ARGUMENTS */
+.argument-list {
+    margin: 0 auto 30px;
+    text-align: left;
+    max-width: 90%;
+}
+
+.argument-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    transition: var(--transition);
+    background: rgba(255, 255, 255, 0.6);
+    padding: 16px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow-sm);
+}
+
+.argument-item:hover {
+    transform: translateX(5px);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: var(--box-shadow);
+}
+
+.argument-icon {
+    position: relative;
+    font-size: 24px;
+    margin-right: 15px;
+    flex-shrink: 0;
+    transition: var(--transition);
+    filter: drop-shadow(0 4px 6px rgba(99, 102, 241, 0.3));
+    animation: float-icon 3s infinite ease-in-out;
+    transform-style: preserve-3d;
+    perspective: 800px;
+}
+
+.argument-item:hover .argument-icon {
+    animation: pulse-3d 0.8s infinite alternate;
+}
+
+.argument-text {
+    font-size: 15px;
+    color: var(--text-light);
+    line-height: 1.5;
+}
+
+/* ANIMATION LOGO */
+@keyframes logoReveal {
+    0% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    60% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.app-title {
+    animation: logoReveal 1.2s ease-out forwards;
+}
+
+/* LIMITES ET BADGES */
+.limit-info {
+    display: inline-block;
+    padding: 8px 16px;
+    background: linear-gradient(120deg, rgba(99, 102, 241, 0.1), rgba(245, 158, 11, 0.1));
+    border-radius: 30px;
+    margin: 15px 0;
+    font-weight: 500;
+    color: var(--text);
+    box-shadow: var(--box-shadow-sm);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.premium-badge, .limit-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+.premium-badge {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    box-shadow: 0 3px 8px rgba(245, 158, 11, 0.3);
+}
+
+.limit-badge {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    box-shadow: 0 3px 8px rgba(99, 102, 241, 0.3);
+}
+
+.limit-banner-container {
+    margin: 10px auto 20px;
+    max-width: 90%;
+}
+
+.limit-banner {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: linear-gradient(120deg, rgba(99, 102, 241, 0.08), rgba(245, 158, 11, 0.08));
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary);
+    margin-bottom: 15px;
+    box-shadow: var(--box-shadow-sm);
+}
+
+.limit-icon {
+    font-size: 22px;
+    margin-right: 12px;
+    flex-shrink: 0;
+    color: var(--primary);
+}
+
+.limit-text {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+}
+
+.limit-text p {
+    margin: 0;
+    color: inherit;
+}
+
+.limit-message {
+    text-align: center;
+    padding: 12px;
+    margin: 15px 0;
+    background-color: rgba(99, 102, 241, 0.08);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    color: var(--primary);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    font-weight: 500;
+}
+
+.limit-message.error {
+    background-color: rgba(239, 68, 68, 0.08);
+    color: var(--error);
+    border-color: rgba(239, 68, 68, 0.2);
+}
