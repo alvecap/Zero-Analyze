@@ -167,37 +167,91 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 4000);
     }
     
-    // Démarrer le questionnaire avec animation - FONCTION CORRIGÉE
+    // FONCTION CORRIGÉE POUR LE BOUTON "COMMENCER"
     window.startQuestionnaire = function() {
         console.log("Démarrage du questionnaire");
         
-        // Ajouter une classe d'animation au bouton
-        const startButton = document.getElementById('start-btn');
-        if (startButton) {
-            startButton.classList.add('btn-loading');
-            setTimeout(() => {
-                startButton.classList.remove('btn-loading');
+        try {
+            // Ajouter une classe d'animation au bouton
+            const startButton = document.getElementById('start-btn');
+            if (startButton) {
+                startButton.classList.add('btn-loading');
+                startButton.disabled = true; // Désactiver pour éviter les doubles clics
                 
-                // S'assurer que resetQuestionnaire existe avant de l'appeler
-                if (typeof window.resetQuestionnaire === 'function') {
-                    window.resetQuestionnaire();
-                } else {
-                    console.warn("La fonction resetQuestionnaire n'est pas disponible");
+                setTimeout(() => {
+                    startButton.classList.remove('btn-loading');
+                    startButton.disabled = false;
+                    
+                    try {
+                        // S'assurer que resetQuestionnaire existe avant de l'appeler
+                        if (typeof window.resetQuestionnaire === 'function') {
+                            window.resetQuestionnaire();
+                        } else {
+                            console.warn("La fonction resetQuestionnaire n'est pas disponible");
+                        }
+                        
+                        // Naviguer vers la page du questionnaire
+                        window.navigateTo('questionnaire');
+                    } catch (innerError) {
+                        console.error("Erreur lors du démarrage du questionnaire:", innerError);
+                        
+                        // Tentative de navigation directe en cas d'échec
+                        navigateToQuestionnaireDirect();
+                    }
+                }, 800); // Délai d'animation
+            } else {
+                console.error("Bouton 'start-btn' non trouvé");
+                
+                // Tentative de navigation directe en cas d'échec
+                try {
+                    if (typeof window.resetQuestionnaire === 'function') {
+                        window.resetQuestionnaire();
+                    }
+                    window.navigateTo('questionnaire');
+                } catch (directError) {
+                    console.error("Erreur de navigation directe:", directError);
+                    navigateToQuestionnaireDirect();
                 }
-                
-                // Naviguer vers la page du questionnaire
-                window.navigateTo('questionnaire');
-            }, 800); // Délai d'animation
-        } else {
-            console.error("Bouton 'start-btn' non trouvé");
-            
-            // Tentative de navigation directe en cas d'échec
-            if (typeof window.resetQuestionnaire === 'function') {
-                window.resetQuestionnaire();
             }
-            window.navigateTo('questionnaire');
+        } catch (outerError) {
+            console.error("Erreur globale lors du démarrage du questionnaire:", outerError);
+            navigateToQuestionnaireDirect();
         }
     };
+    
+    // Fonction de secours pour naviguer directement vers le questionnaire
+    function navigateToQuestionnaireDirect() {
+        try {
+            // Masquer toutes les pages
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Afficher la page du questionnaire
+            const questionnairePage = document.getElementById('questionnaire');
+            if (questionnairePage) {
+                questionnairePage.classList.add('active');
+                
+                // Mettre à jour la navigation
+                const navButtons = document.querySelectorAll('.nav-item');
+                navButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.id === 'nav-questionnaire') {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                console.log("Navigation directe vers le questionnaire réussie");
+            } else {
+                console.error("Page 'questionnaire' introuvable");
+                showToast("Erreur", "Impossible de démarrer le questionnaire", "❌");
+            }
+        } catch (error) {
+            console.error("Échec de la navigation directe:", error);
+            showToast("Erreur", "Impossible de démarrer le questionnaire", "❌");
+        }
+    }
     
     // ======================================================
     // PARTIE 5: AUTHENTIFICATION ET GESTION DES UTILISATEURS
@@ -217,6 +271,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Vérifier/créer l'utilisateur dans Firestore
             currentUser = await checkOrCreateUser(telegramUser);
             console.log("Utilisateur authentifié:", currentUser);
+            
+            // Exposer l'utilisateur à la portée globale
+            window.currentUser = currentUser;
             
             // Vérifier les limites d'utilisation
             checkUserLimits();
@@ -356,83 +413,158 @@ document.addEventListener('DOMContentLoaded', function() {
     // PARTIE 6: GESTION DES PROFILS ET SERVICES
     // ======================================================
     
-    // Chargement du profil utilisateur - AMÉLIORÉ
-    function loadUserProfile() {
+    // Chargement du profil utilisateur - AMÉLIORÉ ET CORRIGÉ
+    window.loadUserProfile = function() {
         const profileContent = document.getElementById('profile-content');
         if (!profileContent) return;
         
+        // Ajouter une animation de chargement
+        profileContent.innerHTML = `
+            <div class="loading-animation" style="text-align: center; margin: 20px 0;">
+                <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(99, 102, 241, 0.3); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite;"></div>
+                <p style="margin-top: 15px;">Chargement de votre profil...</p>
+            </div>
+        `;
+        
+        // Vérifier si l'utilisateur est authentifié
         if (currentUser) {
-            // Utilisateur authentifié
-            profileContent.innerHTML = `
-                <div class="profile-info">
-                    <div class="profile-picture">
-                        ${currentUser.firstName ? currentUser.firstName.charAt(0) : '?'}${currentUser.lastName ? currentUser.lastName.charAt(0) : ''}
+            try {
+                // Utilisateur authentifié
+                profileContent.innerHTML = `
+                    <div class="profile-info">
+                        <div class="profile-picture">
+                            ${currentUser.firstName ? currentUser.firstName.charAt(0) : '?'}${currentUser.lastName ? currentUser.lastName.charAt(0) : ''}
+                        </div>
+                        <div>
+                            <h3 class="profile-name">${currentUser.firstName || ''} ${currentUser.lastName || ''}</h3>
+                            <p>@${currentUser.username || 'inconnu'}</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 class="profile-name">${currentUser.firstName || ''} ${currentUser.lastName || ''}</h3>
-                        <p>@${currentUser.username || 'inconnu'}</p>
+                    <div class="profile-details">
+                        <p>Bienvenue dans ZERO ANALYZE, votre application de prédiction sportive basée uniquement sur les cotes.</p>
+                        <p>Vos prédictions sont générées automatiquement grâce à nos algorithmes avancés.</p>
+                        ${currentUser.isPremium ? '<div class="premium-status">Statut: <span class="premium-badge">Premium</span></div>' : ''}
                     </div>
-                </div>
-                <div class="profile-details">
-                    <p>Bienvenue dans ZERO ANALYZE, votre application de prédiction sportive basée uniquement sur les cotes.</p>
-                    <p>Vos prédictions sont générées automatiquement grâce à nos algorithmes avancés.</p>
-                    ${currentUser.isPremium ? '<div class="premium-status">Statut: <span class="premium-badge">Premium</span></div>' : ''}
-                </div>
-            `;
-            
-            // Ajouter les statistiques si possible
-            loadUserStats();
+                `;
+                
+                // Ajouter les statistiques si possible
+                loadUserStats(currentUser.id);
+            } catch (error) {
+                console.error("Erreur lors de l'affichage du profil:", error);
+                displayErrorProfile(profileContent);
+            }
         } else if (telegramApp && telegramApp.initDataUnsafe?.user) {
             // Utilisateur Telegram mais pas encore dans Firebase
             const user = telegramApp.initDataUnsafe.user;
             
-            // Authentifier l'utilisateur avec les données Telegram
-            authenticateUser(user).then(() => {
-                loadUserProfile(); // Recharger le profil après authentification
-            });
-            
-            // Afficher un message de chargement en attendant
-            profileContent.innerHTML = `
-                <div class="profile-info">
-                    <div class="profile-picture">
-                        ${user.first_name ? user.first_name.charAt(0) : '?'}${user.last_name ? user.last_name.charAt(0) : ''}
+            try {
+                // Tenter d'authentifier l'utilisateur
+                authenticateUser(user).then((userData) => {
+                    if (userData) {
+                        // Recharger le profil après authentification
+                        loadUserProfile();
+                    } else {
+                        // Afficher une erreur
+                        displayErrorProfile(profileContent);
+                    }
+                }).catch((error) => {
+                    console.error("Erreur lors de l'authentification:", error);
+                    displayErrorProfile(profileContent);
+                });
+                
+                // Afficher un message de chargement en attendant
+                profileContent.innerHTML = `
+                    <div class="profile-info">
+                        <div class="profile-picture">
+                            ${user.first_name ? user.first_name.charAt(0) : '?'}${user.last_name ? user.last_name.charAt(0) : ''}
+                        </div>
+                        <div>
+                            <h3 class="profile-name">${user.first_name || ''} ${user.last_name || ''}</h3>
+                            <p>@${user.username || 'inconnu'}</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 class="profile-name">${user.first_name || ''} ${user.last_name || ''}</h3>
-                        <p>@${user.username || 'inconnu'}</p>
+                    <div class="profile-details">
+                        <p>Chargement de votre profil ZERO ANALYZE...</p>
+                        <div class="loading-animation" style="text-align: center; margin: 20px 0;">
+                            <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(99, 102, 241, 0.3); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite;"></div>
+                        </div>
                     </div>
-                </div>
-                <div class="profile-details">
-                    <p>Chargement de votre profil ZERO ANALYZE...</p>
-                    <div class="loading-animation" style="text-align: center; margin: 20px 0;">
-                        <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(99, 102, 241, 0.3); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite;"></div>
-                    </div>
-                </div>
-            `;
+                `;
+            } catch (error) {
+                console.error("Erreur lors de l'authentification depuis le profil:", error);
+                displayErrorProfile(profileContent);
+            }
         } else {
             // Message d'erreur
-            profileContent.innerHTML = `
-                <div class="card">
-                    <div class="error-icon">⚠️</div>
-                    <h3>Authentification requise</h3>
-                    <p class="error-subtitle">Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
-                </div>
-            `;
+            displayErrorProfile(profileContent);
+        }
+    };
+    
+    // Affichage d'erreur de profil avec bouton Réessayer
+    function displayErrorProfile(profileContent) {
+        if (!profileContent) return;
+        
+        profileContent.innerHTML = `
+            <div class="card">
+                <div class="error-icon">⚠️</div>
+                <h3>Problème de chargement</h3>
+                <p class="error-subtitle">Impossible de charger votre profil. Veuillez réessayer ultérieurement.</p>
+                <button id="retry-profile-btn" class="btn" style="margin-top: 20px;">Réessayer</button>
+            </div>
+        `;
+        
+        // Ajouter un gestionnaire d'événement pour le bouton Réessayer
+        const retryButton = document.getElementById('retry-profile-btn');
+        if (retryButton) {
+            retryButton.onclick = function() {
+                // Afficher une animation de chargement
+                profileContent.innerHTML = `
+                    <div class="loading-animation" style="text-align: center; margin: 20px 0;">
+                        <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(99, 102, 241, 0.3); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite;"></div>
+                        <p style="margin-top: 15px;">Chargement de votre profil...</p>
+                    </div>
+                `;
+                
+                // Retenter l'authentification
+                if (telegramApp && telegramApp.initDataUnsafe?.user) {
+                    authenticateUser(telegramApp.initDataUnsafe.user).then(() => {
+                        setTimeout(() => {
+                            loadUserProfile();
+                        }, 500);
+                    }).catch(() => {
+                        setTimeout(() => {
+                            displayErrorProfile(profileContent);
+                        }, 500);
+                    });
+                } else {
+                    setTimeout(() => {
+                        displayErrorProfile(profileContent);
+                    }, 500);
+                }
+            };
         }
     }
     
     // Chargement des statistiques de l'utilisateur - AMÉLIORÉ
-    async function loadUserStats() {
-        if (!db || !currentUser || !currentUser.id) return;
+    async function loadUserStats(userId) {
+        if (!db || !userId) return;
         
         const statsContainer = document.getElementById('prediction-stats');
         if (!statsContainer) return;
         
+        // Afficher une animation de chargement
+        statsContainer.innerHTML = `
+            <div class="loading-animation" style="text-align: center; margin: 20px 0;">
+                <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(99, 102, 241, 0.3); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite;"></div>
+                <p style="margin-top: 15px;">Chargement de vos statistiques...</p>
+            </div>
+        `;
+        
         try {
             // Récupérer l'utilisateur
-            const userDoc = await db.collection('users').doc(currentUser.id).get();
+            const userDoc = await db.collection('users').doc(userId).get();
             if (!userDoc.exists) {
-                return;
+                throw new Error("Utilisateur non trouvé");
             }
             
             const userData = userDoc.data();
@@ -448,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Récupérer l'historique des prédictions
             const predictionsQuery = db.collection('predictions')
-                .where('userId', '==', currentUser.id)
+                .where('userId', '==', userId)
                 .orderBy('timestamp', 'desc')
                 .limit(5);
             
@@ -456,7 +588,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const predictions = [];
             
             predictionsSnapshot.forEach(doc => {
-                predictions.push(doc.data());
+                predictions.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
             });
             
             // Créer le HTML des statistiques
@@ -519,23 +654,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             }
             
-            // Mettre à jour le conteneur
-            statsContainer.innerHTML = statsHTML;
+            // Mettre à jour le conteneur avec une transition fluide
+            statsContainer.style.opacity = 0;
+            setTimeout(() => {
+                statsContainer.innerHTML = statsHTML;
+                statsContainer.style.transition = 'opacity 0.5s ease';
+                statsContainer.style.opacity = 1;
+            }, 300);
         } catch (error) {
             console.error("Erreur lors du chargement des statistiques:", error);
             statsContainer.innerHTML = `
                 <div class="card">
                     <p class="error-message">Impossible de charger vos statistiques. Veuillez réessayer.</p>
+                    <button id="retry-stats-btn" class="btn btn-outline" style="margin-top: 10px;">Réessayer</button>
                 </div>
             `;
+            
+            // Ajouter un gestionnaire d'événement pour le bouton Réessayer
+            const retryButton = document.getElementById('retry-stats-btn');
+            if (retryButton) {
+                retryButton.onclick = function() {
+                    loadUserStats(userId);
+                };
+            }
         }
     }
     
     // Chargement des services
-    function loadServices() {
+    window.loadServices = function() {
         // Les services sont déjà définis dans le HTML, rien à faire ici
         console.log("Page des services chargée");
-    }
+    };
     
     // ======================================================
     // PARTIE 7: GESTION DES RÉSULTATS ET PRÉDICTIONS
@@ -669,7 +818,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Fermer le modal avec un événement onclick
         const closeButton = document.getElementById('close-limit-modal');
-        if (closeButton) {closeButton.onclick = function() {
+        if (closeButton) {
+            closeButton.onclick = function() {
                 modal.style.opacity = 0;
                 setTimeout(() => {
                     document.body.removeChild(modal);
@@ -1012,6 +1162,23 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             showToast("Bienvenue", "ZERO ANALYZE - Prédictions par les cotes", "🎯");
         }, 1000);
+        
+        // Corrige le bouton "Commencer" s'il existe
+        fixStartButton();
+    }
+    
+    // Vérifier et corriger le bouton "Commencer"
+    function fixStartButton() {
+        const startButton = document.getElementById('start-btn');
+        if (!startButton) return;
+        
+        // S'assurer que le bouton utilise notre fonction corrigée
+        startButton.onclick = window.startQuestionnaire;
+        
+        // Ajouter une classe pour montrer qu'il est prêt
+        startButton.classList.add('btn-ready');
+        
+        console.log("Bouton 'Commencer' corrigé et prêt");
     }
     
     // Vérifier si les fonctions essentielles sont disponibles
@@ -1030,6 +1197,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (typeof func.object[func.name] !== 'function') {
                 console.warn(`Fonction ${func.name} non disponible`);
                 missingFunctions.push(func.name);
+                
+                // Essayer de fournir une implémentation de secours
+                if (func.name === 'resetQuestionnaire' && !window.resetQuestionnaire) {
+                    window.resetQuestionnaire = function() {
+                        console.log("Réinitialisation du questionnaire (fonction de secours)");
+                        // L'implémentation réelle devrait être fournie par questions.js
+                    };
+                }
             }
         });
         
@@ -1040,4 +1215,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Démarrer l'application
     initApp();
+    
+    // Exposer l'API publique
+    window.app = {
+        showServiceDetails: window.showServiceDetails,
+        showContactForm: window.showContactForm,
+        navigateTo: window.navigateTo,
+        startQuestionnaire: window.startQuestionnaire,
+        showResults: window.showResults,
+        showError: window.showError,
+        openExternalLink: window.openExternalLink
+    };
 });
