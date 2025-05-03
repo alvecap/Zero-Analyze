@@ -1,0 +1,126 @@
+/* questionnaire.css - Styles spécifiques pour la page de questionnaire */
+
+/* Progress bar et étapes */
+.progress-container {
+    margin-bottom: 20px;
+}
+
+.progress {
+    height: 8px;
+    background-color: rgba(99, 102, 241, 0.1);
+    border-radius: 40px;
+    margin-bottom: 15px;
+    overflow: hidden;
+    box-shadow: var(--box-shadow-inner);
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 40px;
+    width: 0%;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+
+.steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.step {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: rgba(99, 102, 241, 0.2);
+    transition: all 0.5s ease;
+    position: relative;
+}
+
+.step::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: rgba(99, 102, 241, 0.1);
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    background-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+    transform: scale(1.2);
+}
+
+.step.active::before {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.step.completed {
+    background-color: var(--success);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+}
+
+/* Formulaire de questions */
+.question-label {
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: block;
+    color: var(--text);
+    font-size: 16px;
+}
+
+.question-hint {
+    color: var(--text-light);
+    font-size: 14px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.question-hint::before {
+    content: 'ℹ️';
+    margin-right: 6px;
+    font-size: 14px;
+}
+
+.question-group {
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 16px;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: var(--box-shadow-sm);
+}
+
+.question-group:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--box-shadow);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* Input fields */
+.input-wrapper {
+    position: relative;
+}
+
+.input-wrapper input {
+    padding-right: 50px; /* Space for the icon */
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.input-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+    font-size: 18px;
+}
