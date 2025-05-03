@@ -1,5 +1,5 @@
 // questions.js - Gestion du système de questionnaire étape par étape
-// Version améliorée avec design moderne et animations
+// Version améliorée avec correction des problèmes de chargement
 
 // Configuration des étapes du questionnaire
 const questionnaireSteps = [
@@ -231,12 +231,14 @@ let stepsCompleted = [];
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Questionnaire initialisé");
     
+    // Générer les indicateurs d'étape
+    generateStepIndicators();
+    
     // Vérifier si les boutons existent
     const prevButton = document.getElementById('prev-btn');
     const nextButton = document.getElementById('next-btn');
     
-    // Les gestionnaires d'événements sont maintenant définis dans index.html avec onclick
-    // pour assurer la compatibilité, mais vérifions quand même
+    // Ajouter des gestionnaires d'événements
     if (prevButton && !prevButton.onclick) {
         prevButton.onclick = navigateToPreviousStep;
     }
@@ -244,26 +246,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (nextButton && !nextButton.onclick) {
         nextButton.onclick = navigateToNextStep;
     }
+    
+    // Ajouter un gestionnaire pour le bouton de démarrage si on est sur la page d'accueil
+    const startButton = document.getElementById('start-btn');
+    if (startButton && !startButton.onclick) {
+        startButton.onclick = function() {
+            window.startQuestionnaire();
+        };
+    }
 });
 
-// Réinitialisation complète du questionnaire
-async function resetQuestionnaire() {
+// Réinitialisation complète du questionnaire et démarrage
+window.resetQuestionnaire = function() {
     console.log("Réinitialisation du questionnaire");
-    
-    // Vérifier d'abord si l'utilisateur peut faire une prédiction
-    let canProceed = true;
-    
-    if (window.telegramAuth && window.telegramAuth.isAuthenticated && window.telegramAuth.isAuthenticated()) {
-        if (window.predictionLimits && window.predictionLimits.canMakePrediction) {
-            const limitStatus = await window.predictionLimits.canMakePrediction(window.telegramAuth.getUserId());
-            canProceed = limitStatus.allowed;
-            
-            if (!canProceed) {
-                showLimitReachedMessage(limitStatus.message);
-                return;
-            }
-        }
-    }
     
     // Réinitialiser les variables
     currentStep = 0;
@@ -281,41 +276,50 @@ async function resetQuestionnaire() {
     
     // Animation de la barre de progression
     updateProgressBarWithAnimation();
-}
+    
+    return true; // Indiquer que l'initialisation a réussi
+};
 
-// Afficher un message lorsque la limite est atteinte
-function showLimitReachedMessage(message) {
-    const container = document.getElementById('questions-container');
-    if (!container) return;
+// Fonction améliorée pour le bouton "Commencer"
+window.startQuestionnaire = function() {
+    console.log("Démarrage du questionnaire");
     
-    container.innerHTML = `
-        <div class="error-message centered" style="background-color: rgba(239, 68, 68, 0.1); padding: 25px; border-radius: 16px;">
-            <div class="error-icon" style="font-size: 48px; margin-bottom: 15px;">⏱️</div>
-            <h3 style="color: var(--error); margin-bottom: 10px;">Limite atteinte</h3>
-            <p style="margin-bottom: 20px;">${message}</p>
-            <button id="back-to-home-btn" class="btn" style="max-width: 200px; margin: 0 auto;">Retour à l'accueil</button>
-        </div>
-    `;
-    
-    // Configurer le bouton de retour
-    const backButton = document.getElementById('back-to-home-btn');
-    if (backButton) {
-        backButton.onclick = function() {
-            window.navigateTo('home');
-        };
+    // Ajouter une animation au bouton
+    const startButton = document.getElementById('start-btn');
+    if (startButton) {
+        startButton.classList.add('btn-loadingstartButton.disabled = true; // Désactiver pour éviter les doubles clics
+        
+        // Masquer immédiatement le texte du bouton pour montrer l'animation
+        startButton.innerHTML = '';
+        startButton.classList.add('btn-loading');
+        
+        // Définir la navigation avec un délai minimal
+        setTimeout(() => {
+            // Réactiver le bouton et restaurer le texte
+            startButton.classList.remove('btn-loading');
+            startButton.innerHTML = 'Commencer';
+            startButton.disabled = false;
+            
+            // Réinitialiser le questionnaire
+            window.resetQuestionnaire();
+            
+            // Naviguer vers la page du questionnaire
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo('questionnaire');
+            } else {
+                // Fallback si la fonction navigateTo n'est pas disponible
+                const pages = document.querySelectorAll('.page');
+                pages.forEach(page => {
+                    page.classList.remove('active');
+                });
+                const questionnairePage = document.getElementById('questionnaire');
+                if (questionnairePage) {
+                    questionnairePage.classList.add('active');
+                }
+            }
+        }, 300);
     }
-    
-    // Masquer les boutons de navigation
-    const prevButton = document.getElementById('prev-btn');
-    const nextButton = document.getElementById('next-btn');
-    
-    if (prevButton) prevButton.style.display = 'none';
-    if (nextButton) nextButton.style.display = 'none';
-    
-    // Masquer les indicateurs d'étape
-    const stepIndicators = document.getElementById('step-indicators');
-    if (stepIndicators) stepIndicators.style.display = 'none';
-}
+};
 
 // Générer les indicateurs d'étapes
 function generateStepIndicators() {
@@ -338,11 +342,10 @@ function loadCurrentStep() {
     // Obtenir l'étape actuelle
     const step = questionnaireSteps[currentStep];
     const container = document.getElementById('questions-container');
-    if (!container) return;
-    
-    // Préparer la transition
-    container.style.opacity = 0;
-    container.style.transform = 'translateY(20px)';
+    if (!container || !step) {
+        console.error("Conteneur de questions ou étape non trouvé");
+        return;
+    }
     
     // Mettre à jour le titre de l'étape
     const stepTitleElement = document.getElementById('step-title');
@@ -353,105 +356,97 @@ function loadCurrentStep() {
         `;
     }
     
-    // Court délai pour permettre l'animation
-    setTimeout(() => {
-        // Vider le contenu précédent
-        container.innerHTML = '';
+    // Vider le contenu précédent et afficher directement le nouveau
+    container.innerHTML = '';
+    
+    // Créer un wrapper pour toutes les questions
+    const questionsWrapper = document.createElement('div');
+    
+    // Ajouter les questions
+    step.questions.forEach((question, qIndex) => {
+        const questionGroup = document.createElement('div');
+        questionGroup.className = 'question-group';
+        questionGroup.style.animationDelay = `${qIndex * 0.1}s`;
         
-        // Créer un wrapper pour toutes les questions
-        const questionsWrapper = document.createElement('div');
+        const labelContainer = document.createElement('div');
+        labelContainer.style.display = 'flex';
+        labelContainer.style.alignItems = 'center';
+        labelContainer.style.marginBottom = '10px';
         
-        // Ajouter les questions
-        step.questions.forEach((question, qIndex) => {
-            const questionGroup = document.createElement('div');
-            questionGroup.className = 'question-group';
-            questionGroup.style.animationDelay = `${qIndex * 0.1}s`;
-            
-            const labelContainer = document.createElement('div');
-            labelContainer.style.display = 'flex';
-            labelContainer.style.alignItems = 'center';
-            labelContainer.style.marginBottom = '10px';
-            
-            const iconSpan = document.createElement('span');
-            iconSpan.textContent = question.icon;
-            iconSpan.style.marginRight = '10px';
-            iconSpan.style.fontSize = '20px';
-            
-            const label = document.createElement('label');
-            label.className = 'question-label';
-            label.htmlFor = question.id;
-            label.textContent = question.label;
-            
-            labelContainer.appendChild(iconSpan);
-            labelContainer.appendChild(label);
-            
-            const hint = document.createElement('div');
-            hint.className = 'question-hint';
-            hint.textContent = question.legend;
-            
-            const inputWrapper = document.createElement('div');
-            inputWrapper.className = 'input-wrapper';
-            
-            const input = document.createElement('input');
-            input.type = question.type;
-            input.id = question.id;
-            input.name = question.id;
-            input.step = '0.01';
-            input.min = '1';
-            input.required = question.required;
-            input.placeholder = 'Entrez la cote...';
-            
-            const inputIcon = document.createElement('div');
-            inputIcon.className = 'input-icon';
-            inputIcon.textContent = '🔢';
-            
-            // Restaurer la valeur si déjà répondue
-            if (userAnswers[question.id]) {
-                input.value = userAnswers[question.id];
-            }
-            
-            inputWrapper.appendChild(input);
-            inputWrapper.appendChild(inputIcon);
-            
-            questionGroup.appendChild(labelContainer);
-            questionGroup.appendChild(hint);
-            questionGroup.appendChild(inputWrapper);
-            questionsWrapper.appendChild(questionGroup);
-        });
+        const iconSpan = document.createElement('span');
+        iconSpan.textContent = question.icon;
+        iconSpan.style.marginRight = '10px';
+        iconSpan.style.fontSize = '20px';
         
-        container.appendChild(questionsWrapper);
+        const label = document.createElement('label');
+        label.className = 'question-label';
+        label.htmlFor = question.id;
+        label.textContent = question.label;
         
-        // Ajouter un message spécial si nécessaire
-        if (step.specialMessage) {
-            const specialMessage = document.createElement('div');
-            specialMessage.className = 'centered';
-            specialMessage.style.fontSize = '14px';
-            specialMessage.style.color = 'var(--text-light)';
-            specialMessage.style.margin = '15px 0';
-            specialMessage.style.padding = '10px';
-            specialMessage.style.borderRadius = 'var(--border-radius)';
-            specialMessage.style.background = 'rgba(245, 158, 11, 0.1)';
-            specialMessage.style.border = '1px solid rgba(245, 158, 11, 0.2)';
-            specialMessage.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center;">
-                    <span style="margin-right: 8px; font-size: 18px;">ℹ️</span>
-                    <span>${step.specialMessage}</span>
-                </div>
-            `;
-            container.appendChild(specialMessage);
+        labelContainer.appendChild(iconSpan);
+        labelContainer.appendChild(label);
+        
+        const hint = document.createElement('div');
+        hint.className = 'question-hint';
+        hint.textContent = question.legend;
+        
+        const inputWrapper = document.createElement('div');
+        inputWrapper.className = 'input-wrapper';
+        
+        const input = document.createElement('input');
+        input.type = question.type;
+        input.id = question.id;
+        input.name = question.id;
+        input.step = '0.01';
+        input.min = '1';
+        input.required = question.required;
+        input.placeholder = 'Entrez la cote...';
+        
+        const inputIcon = document.createElement('div');
+        inputIcon.className = 'input-icon';
+        inputIcon.textContent = '🔢';
+        
+        // Restaurer la valeur si déjà répondue
+        if (userAnswers[question.id]) {
+            input.value = userAnswers[question.id];
         }
         
-        // Animation d'entrée
-        container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        container.style.opacity = 1;
-        container.style.transform = 'translateY(0)';
+        inputWrapper.appendChild(input);
+        inputWrapper.appendChild(inputIcon);
         
-        // Mettre à jour la barre de progression
-        updateProgressBarWithAnimation();
-        
-        // Mettre à jour les indicateurs d'étape
-        updateStepIndicators();
-    }, 100);
+        questionGroup.appendChild(labelContainer);
+        questionGroup.appendChild(hint);
+        questionGroup.appendChild(inputWrapper);
+        questionsWrapper.appendChild(questionGroup);
+    });
+    
+    container.appendChild(questionsWrapper);
+    
+    // Ajouter un message spécial si nécessaire
+    if (step.specialMessage) {
+        const specialMessage = document.createElement('div');
+        specialMessage.className = 'centered';
+        specialMessage.style.fontSize = '14px';
+        specialMessage.style.color = 'var(--text-light)';
+        specialMessage.style.margin = '15px 0';
+        specialMessage.style.padding = '10px';
+        specialMessage.style.borderRadius = 'var(--border-radius)';
+        specialMessage.style.background = 'rgba(245, 158, 11, 0.1)';
+        specialMessage.style.border = '1px solid rgba(245, 158, 11, 0.2)';
+        specialMessage.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <span style="margin-right: 8px; font-size: 18px;">ℹ️</span>
+                <span>${step.specialMessage}</span>
+            </div>
+        `;
+        container.appendChild(specialMessage);
+    }
+    
+    // Mettre à jour la barre de progression
+    updateProgressBarWithAnimation();
+    
+    // Mettre à jour les indicateurs d'étape
+    updateStepIndicators();
 }
 
 // Mise à jour de la barre de progression avec animation
@@ -463,14 +458,6 @@ function updateProgressBarWithAnimation() {
     
     // Animer la progression
     progressBar.style.width = `${progress}%`;
-    
-    // Effet de pulsation
-    progressBar.style.transition = 'width 0.5s ease-out, opacity 0.3s';
-    progressBar.style.opacity = 0.8;
-    
-    setTimeout(() => {
-        progressBar.style.opacity = 1;
-    }, 300);
 }
 
 // Mise à jour des indicateurs d'étape
@@ -526,34 +513,14 @@ function navigateToPreviousStep() {
             }, 100);
         }
         
-        // Animation de sortie pour le conteneur de questions
-        const container = document.getElementById('questions-container');
-        if (container) {
-            container.style.opacity = 0;
-            container.style.transform = 'translateX(20px)';
-            
-            setTimeout(() => {
-                currentStep--;
-                loadCurrentStep();
-                updateNavigationButtons();
-                
-                // Restaurer l'animation
-                container.style.transform = 'translateX(-20px)';
-                setTimeout(() => {
-                    container.style.opacity = 1;
-                    container.style.transform = 'translateX(0)';
-                }, 50);
-            }, 300);
-        } else {
-            currentStep--;
-            loadCurrentStep();
-            updateNavigationButtons();
-        }
+        currentStep--;
+        loadCurrentStep();
+        updateNavigationButtons();
     }
 }
 
 // Navigation vers l'étape suivante ou soumission
-async function navigateToNextStep() {
+function navigateToNextStep() {
     // Sauvegarder les réponses de l'étape actuelle
     if (!saveCurrentStepAnswers()) {
         return; // Validation échouée
@@ -573,72 +540,25 @@ async function navigateToNextStep() {
         }, 100);
     }
     
-    // Vérifier l'authentification et les limites à la dernière étape
+    // Dernière étape : soumettre le formulaire
     if (currentStep === questionnaireSteps.length - 1) {
-        // Vérifier l'authentification
-        if (window.telegramAuth && window.telegramAuth.isAuthenticated) {
-            const isAuthenticated = window.telegramAuth.isAuthenticated();
-            if (!isAuthenticated) {
-                const container = document.getElementById('questions-container');
-                if (container && window.telegramAuth.showAuthError) {
-                    window.telegramAuth.showAuthError(container);
-                } else {
-                    showAuthError(container);
-                }
-                return;
-            }
-        }
-        
-        // Vérifier les limites de prédiction
-        if (window.predictionLimits && window.predictionLimits.canMakePrediction) {
-            const userId = window.telegramAuth ? window.telegramAuth.getUserId() : null;
-            if (userId) {
-                const limitStatus = await window.predictionLimits.canMakePrediction(userId);
-                if (!limitStatus.allowed) {
-                    showLimitReachedMessage(limitStatus.message);
-                    return;
-                }
-            }
-        }
-        
-        // Animation de chargement pour le bouton
         if (nextButton) {
             nextButton.classList.add('btn-loading');
             setTimeout(() => {
                 nextButton.classList.remove('btn-loading');
                 // Soumettre le formulaire
                 submitForm();
-            }, 1000);
+            }, 500);
         } else {
             // Soumettre le formulaire directement
             submitForm();
         }
     } else {
-        // Animation de sortie pour le conteneur de questions
-        const container = document.getElementById('questions-container');
-        if (container) {
-            container.style.opacity = 0;
-            container.style.transform = 'translateX(-20px)';
-            
-            setTimeout(() => {
-                // Passer à l'étape suivante
-                currentStep++;
-                loadCurrentStep();
-                updateNavigationButtons();
-                
-                // Restaurer l'animation
-                container.style.transform = 'translateX(20px)';
-                setTimeout(() => {
-                    container.style.opacity = 1;
-                    container.style.transform = 'translateX(0)';
-                }, 50);
-            }, 300);
-        } else {
-            // Passer à l'étape suivante directement
-            currentStep++;
-            loadCurrentStep();
-            updateNavigationButtons();
-        }
+        // Passer à l'étape suivante
+        currentStep++;
+        loadCurrentStep();
+        updateNavigationButtons();
+    }
 }
 
 // Sauvegarder les réponses de l'étape actuelle
@@ -655,18 +575,10 @@ function saveCurrentStepAnswers() {
         
         // Validation
         if (question.required && value === '') {
-            if (window.showError) {
-                window.showError('Ce champ est obligatoire', input);
-            } else {
-                showError('Ce champ est obligatoire', input);
-            }
+            showError('Ce champ est obligatoire', input);
             isValid = false;
         } else if (value !== '' && (isNaN(value) || parseFloat(value) < 1)) {
-            if (window.showError) {
-                window.showError('Entrez une cote valide (≥ 1)', input);
-            } else {
-                showError('Entrez une cote valide (≥ 1)', input);
-            }
+            showError('Entrez une cote valide (≥ 1)', input);
             isValid = false;
         }
         
@@ -679,9 +591,15 @@ function saveCurrentStepAnswers() {
     return isValid;
 }
 
-// Fonction d'erreur de secours si window.showError n'est pas disponible
+// Afficher un message d'erreur
 function showError(message, element) {
     if (!element) return;
+    
+    // Supprimer toute erreur existante
+    const existingError = element.parentNode.querySelector('.error-message');
+    if (existingError) {
+        existingError.remove();
+    }
     
     // Créer le message d'erreur
     const errorMessage = document.createElement('div');
@@ -702,64 +620,20 @@ function showError(message, element) {
     // Supprimer après un délai
     setTimeout(function() {
         element.classList.remove('input-error');
-        errorMessage.style.opacity = 0;
-        errorMessage.style.transform = 'translateY(-10px)';
-        errorMessage.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        
-        setTimeout(() => {
-            if (errorMessage.parentNode) {
-                errorMessage.parentNode.removeChild(errorMessage);
-            }
-        }, 300);
+        if (errorMessage.parentNode) {
+            errorMessage.remove();
+        }
     }, 3000);
-}
-
-// Fonction d'erreur d'authentification de secours
-function showAuthError(container) {
-    if (!container) return;
-    
-    container.innerHTML = `
-        <div class="card">
-            <div class="error-icon">⚠️</div>
-            <h3>Authentification requise</h3>
-            <p class="error-subtitle">Ajoutez un nom d'utilisateur dans votre profil Telegram pour accéder à l'application.</p>
-        </div>
-    `;
 }
 
 // Soumission du formulaire
 function submitForm() {
     console.log("Soumission du formulaire avec les réponses:", userAnswers);
     
-    // Vérifier si l'utilisateur est authentifié
-    let isAuthenticated = false;
-    
-    if (window.telegramAuth && window.telegramAuth.isAuthenticated) {
-        isAuthenticated = window.telegramAuth.isAuthenticated();
-    }
-    
-    if (!isAuthenticated) {
-        // Afficher un message d'erreur
-        const container = document.getElementById('questions-container');
-        if (container) {
-            if (window.telegramAuth && window.telegramAuth.showAuthError) {
-                window.telegramAuth.showAuthError(container);
-            } else {
-                showAuthError(container);
-            }
-        }
-        return;
-    }
-    
     // Générer et afficher les résultats de la prédiction
     if (window.generatePrediction) {
         try {
             const prediction = window.generatePrediction(userAnswers);
-            
-            // Ajouter l'ID utilisateur pour l'enregistrement si disponible
-            if (window.telegramAuth && window.telegramAuth.getUserId) {
-                prediction.userId = window.telegramAuth.getUserId();
-            }
             
             // Afficher les résultats via l'API globale
             if (window.showResults) {
@@ -773,59 +647,60 @@ function submitForm() {
         } catch (error) {
             console.error("Erreur lors de la génération de la prédiction:", error);
             // Afficher une erreur
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `
-                <div class="toast-icon">❌</div>
-                <div class="toast-content">
-                    <div class="toast-title">Erreur</div>
-                    <div class="toast-message">Impossible de générer la prédiction</div>
-                </div>
-                <div class="toast-close" onclick="this.parentNode.remove()">×</div>
-            `;
-            document.body.appendChild(toast);
-            
-            // Supprimer après 4 secondes
-            setTimeout(() => {
-                if (toast && toast.parentNode) {
-                    toast.classList.add('toast-hide');
-                    setTimeout(() => toast.remove(), 300);
-                }
-            }, 4000);
+            showToast("Erreur", "Impossible de générer la prédiction", "❌");
         }
     } else {
         console.error("Fonction de prédiction non disponible");
+        showToast("Erreur", "Fonction de prédiction non disponible", "❌");
     }
 }
 
-// Exposer les fonctions au contexte global
-window.resetQuestionnaire = resetQuestionnaire;
-window.navigateToPreviousStep = navigateToPreviousStep;
-window.navigateToNextStep = navigateToNextStep;
-window.showAuthError = showAuthError;
-window.showError = showError;
-
-// Animation initiale au chargement de la page
-setTimeout(() => {
-    const stepIndicators = document.getElementById('step-indicators');
-    if (stepIndicators) {
-        stepIndicators.style.opacity = 0;
-        stepIndicators.style.transform = 'translateY(20px)';
-        stepIndicators.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        
-        setTimeout(() => {
-            stepIndicators.style.opacity = 1;
-            stepIndicators.style.transform = 'translateY(0)';
-        }, 100);
+// Fonction pour afficher un toast de notification
+function showToast(title, message, icon) {
+    // Vérifier si window.showToast existe déjà
+    if (typeof window.showToast === 'function') {
+        window.showToast(title, message, icon);
+        return;
     }
     
-    const progressBar = document.getElementById('progress-bar');
-    if (progressBar) {
-        progressBar.style.width = '0%';
-        progressBar.style.transition = 'width 0.8s ease-in-out';
-        
-        setTimeout(() => {
-            progressBar.style.width = '2%';
-        }, 300);
+    // Supprimer le toast existant s'il y en a un
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) {
+        existingToast.remove();
     }
-}, 500);
+    
+    // Créer un nouveau toast
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+        <div class="toast-icon">${icon || 'ℹ️'}</div>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <div class="toast-close" onclick="this.parentNode.remove()">×</div>
+    `;
+    
+    // Ajouter au DOM
+    document.body.appendChild(toast);
+    
+    // Supprimer automatiquement après 4 secondes
+    setTimeout(() => {
+        if (toast && toast.parentNode) {
+            toast.classList.add('toast-hide');
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 4000);
+}
+
+// Exposer les fonctions au contexte global
+window.navigateToPreviousStep = navigateToPreviousStep;
+window.navigateToNextStep = navigateToNextStep;
+window.showError = showError;
+
+// Exécuter la réinitialisation au chargement si on est sur la page du questionnaire
+if (document.getElementById('questionnaire').classList.contains('active')) {
+    setTimeout(() => {
+        window.resetQuestionnaire();
+    }, 100);
+}
