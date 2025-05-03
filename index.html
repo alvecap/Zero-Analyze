@@ -385,7 +385,8 @@
             position: relative;
         }
 
-        .step::before {content: '';
+        .step::before {
+            content: '';
             position: absolute;
             top: 50%;
             left: 50%;
@@ -860,8 +861,7 @@
             margin-bottom: 1.5rem;
             padding: 16px;
             background: linear-gradient(120deg, rgba(99, 102, 241, 0.08), rgba(245, 158, 11, 0.08));
-            border-radius: var(--border-radius-lg);
-        }
+            border-radius: var(--border-radius-lg);}
 
         .profile-picture {
             width: 80px;
@@ -1168,6 +1168,22 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* Animation de chargement */
+        .loading-animation {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(99, 102, 241, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
     </style>
 </head>
 <body>
@@ -1256,7 +1272,7 @@
                         <div class="cube-face left">PREDI</div>
                         <div class="cube-face top">PARIS</div>
                         <div class="cube-face bottom">GAINS</div>
-                        </div>
+                    </div>
                 </div>
                 <p class="loading-text">Analyse des cotes en cours...</p>
                 <p class="loading-text">Traitement des probabilités...</p>
@@ -1309,16 +1325,23 @@
         <section id="profile" class="page">
             <h2>Votre Profil</h2>
             <div id="profile-content" class="card">
-                <!-- Le contenu sera chargé dynamiquement avec les statistiques utilisateur -->
-                <div class="loading-animation" style="text-align: center; margin: 20px 0;">
-                    <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(99, 102, 241, 0.3); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite;"></div>
+                <!-- Animation de chargement par défaut -->
+                <div class="loading-animation">
+                    <div class="loading-spinner"></div>
                     <p style="margin-top: 15px;">Chargement de votre profil...</p>
                 </div>
             </div>
             
             <!-- Statistiques et historique -->
             <div id="prediction-stats" class="stats-container">
-                <!-- Les statistiques seront chargées dynamiquement ici -->
+                <!-- Animation de chargement par défaut -->
+                <div class="stats-card">
+                    <h4>Vos prédictions</h4>
+                    <div class="loading-animation">
+                        <div class="loading-spinner"></div>
+                        <p style="margin-top: 15px;">Chargement de vos statistiques...</p>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -1406,7 +1429,7 @@
                     if (window.initLogoAnimationEffect) {
                         window.initLogoAnimationEffect(document.getElementById('logo-animation'));
                     }
-                } else if (pageId === 'profile') {
+                    } else if (pageId === 'profile') {
                     if (window.loadUserProfile) {
                         window.loadUserProfile();
                     }
@@ -1415,17 +1438,49 @@
                         window.loadServices();
                     }
                 }
+                
+                // Faire défiler vers le haut
+                window.scrollTo(0, 0);
+            } else {
+                console.error("Page non trouvée:", pageId);
+                showToast("Erreur", "Page introuvable", "❌");
             }
         }
         
         function startQuestionnaire() {
             console.log("Démarrage du questionnaire");
-            // Cette fonction sera remplacée par celle de app.js
-            // CORRECTION: Mettre une implémentation de secours
-            if (window.resetQuestionnaire) {
-                window.resetQuestionnaire();
+            
+            // Ajouter une animation au bouton
+            const startButton = document.getElementById('start-btn');
+            if (startButton) {
+                // Désactiver le bouton pendant le chargement
+                startButton.disabled = true;
+                startButton.classList.add('btn-loading');
+                
+                setTimeout(() => {
+                    // Réactiver le bouton
+                    startButton.disabled = false;
+                    startButton.classList.remove('btn-loading');
+                    
+                    // Tenter de réinitialiser le questionnaire
+                    if (typeof window.resetQuestionnaire === 'function') {
+                        try {
+                            window.resetQuestionnaire();
+                        } catch (error) {
+                            console.error("Erreur lors de la réinitialisation du questionnaire:", error);
+                        }
+                    }
+                    
+                    // Naviguer vers la page du questionnaire
+                    navigateTo('questionnaire');
+                }, 800);
+            } else {
+                // Si le bouton n'existe pas, essayer quand même de naviguer
+                if (typeof window.resetQuestionnaire === 'function') {
+                    window.resetQuestionnaire();
+                }
+                navigateTo('questionnaire');
             }
-            navigateTo('questionnaire');
         }
         
         function navigateToPreviousStep() {
@@ -1474,6 +1529,38 @@
             }
         }
         
+        // Fonction pour afficher un toast
+        function showToast(title, message, icon) {
+            // Supprimer le toast existant s'il y en a un
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // Créer un nouveau toast
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <div class="toast-icon">${icon || 'ℹ️'}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-close" onclick="this.parentNode.remove()">×</div>
+            `;
+            
+            // Ajouter au DOM
+            document.body.appendChild(toast);
+            
+            // Supprimer automatiquement après 4 secondes
+            setTimeout(() => {
+                if (toast && toast.parentNode) {
+                    toast.classList.add('toast-hide');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 4000);
+        }
+        
         // Exposer les fonctions au contexte global
         window.navigateTo = navigateTo;
         window.startQuestionnaire = startQuestionnaire;
@@ -1482,6 +1569,7 @@
         window.showServiceDetails = showServiceDetails;
         window.showContactForm = showContactForm;
         window.resetQuestionnaire = resetQuestionnaire;
+        window.showToast = showToast;
         
         // Fonction pour initialiser les emojis 3D de la page d'accueil
         function initializeEmoji3D() {
@@ -1523,5 +1611,8 @@
     <script src="questions.js"></script>
     <script src="profile.js"></script>
     <script src="app.js"></script>
+    
+    <!-- Script de secours pour les boutons -->
+    <script src="fallback-script.js"></script>
 </body>
 </html>
